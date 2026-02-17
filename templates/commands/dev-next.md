@@ -8,8 +8,9 @@ Refer to the project documentation relevant to the current task:
 
 Once you have context:
 
-- Get the next available task from the task tracker
+- Get the next available task: `{{TASK_TRACKER_NEXT}}`
 - Implement it following the project conventions in .claude/rules/
 - The pre-commit hook will enforce the quality gate automatically
+- Mark task complete: `{{TASK_TRACKER_DONE}}`
 - Create a commit: `<task-id>: <change summary> — <value added>`
 - Report what was done and ask if you should continue to the next task
