@@ -1,0 +1,64 @@
+{
+  "name": "AI Dev Environment",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+
+  "onCreateCommand": "bash setup-ai.sh on-create",
+  "postCreateCommand": "bash setup-ai.sh post-create",
+  "postStartCommand": "bash setup-ai.sh post-start",
+  "postAttachCommand": "echo '[setup-ai] VS Code attached — MCP servers should be available in Copilot Chat'",
+
+  "secrets": {
+    "ANTHROPIC_API_KEY": {
+      "description": "Required for Claude Code & Task Master AI operations",
+      "documentationUrl": "https://console.anthropic.com/settings/keys"
+    },
+    "OPENAI_API_KEY": {
+      "description": "Optional: enables OpenAI models in Task Master",
+      "documentationUrl": "https://platform.openai.com/api-keys"
+    },
+    "PERPLEXITY_API_KEY": {
+      "description": "Optional: enables Task Master --research flag for web search",
+      "documentationUrl": "https://www.perplexity.ai/settings/api"
+    },
+    "GOOGLE_API_KEY": {
+      "description": "Optional: enables Google Gemini models",
+      "documentationUrl": "https://aistudio.google.com/app/apikey"
+    }
+  },
+
+  "containerEnv": {
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
+    "PERPLEXITY_API_KEY": "${localEnv:PERPLEXITY_API_KEY}",
+    "GOOGLE_API_KEY": "${localEnv:GOOGLE_API_KEY}"
+  },
+
+  "remoteEnv": {
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
+    "PERPLEXITY_API_KEY": "${localEnv:PERPLEXITY_API_KEY}",
+    "GOOGLE_API_KEY": "${localEnv:GOOGLE_API_KEY}"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "github.copilot",
+        "github.copilot-chat"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "chat.mcp.discovery.enabled": {
+          "claude": true
+        },
+        "chat.mcp.access": "all"
+      }
+    }
+  }
+}

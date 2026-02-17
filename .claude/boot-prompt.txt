@@ -1,0 +1,16 @@
+When working with tasks via Task Master (MCP), use the three-tier agent system:
+- task-orchestrator: analyzes dependencies, identifies parallel work, deploys executors
+- task-executor: implements specific tasks/subtasks, marks as review when done
+- task-checker: quality gate, verifies implementation before marking done
+
+REMINDER — Before marking ANY task done:
+  1. Format/prettify → 2. Lint → 3. Type-check → 4. Build → 5. Test → 6. Fix failures
+  Only mark done when ALL checks pass. See CLAUDE.md "Task Completion Quality Gate" for details.
+
+REMINDER — When adding dependencies:
+  Use @latest or verify current version via Context7/WebFetch/npm-view. Never guess from training data.
+
+Confirm with the user before proceeding to the next parent task. Use /clear between parent tasks.
+If no subtasks exist, call expand_task with --research flag first.
+
+Don't start anything yet — confirm which agent to use and ask if the user wants current task state.
