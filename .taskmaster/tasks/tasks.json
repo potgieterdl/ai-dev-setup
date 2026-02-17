@@ -1020,8 +1020,70 @@
           "14",
           "15"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install meow dependency and verify package.json bin field",
+            "description": "Confirm meow is installed at latest version and the bin field in package.json correctly points to dist/cli.js. Verify meow ESM import works with the project's tsconfig (ESNext modules, NodeNext resolution).",
+            "dependencies": [],
+            "details": "Run `npm view meow version` to confirm current version. Check package.json `bin` field is `{ \"ai-init\": \"./dist/cli.js\" }`. Verify meow is listed in `dependencies` (not devDependencies) since it's needed at runtime. Check tsconfig.json `moduleResolution` supports named ESM imports from meow. If meow is missing, run `npm install meow@latest`. Verify the import `import meow from 'meow'` compiles without TypeScript errors by running `npx tsc --noEmit`.",
+            "status": "pending",
+            "testStrategy": "Run `npx tsc --noEmit` — zero errors confirms meow types resolve correctly. Run `npm ls meow` to confirm it appears in the dependency tree.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Refactor src/cli.ts to use meow for argument parsing",
+            "description": "Replace the manual `process.argv.slice(2)` parsing in src/cli.ts with a meow-based CLI definition. Define all flags (`--non-interactive`, `--audit`, `--overwrite`) with correct types and defaults. Wire the meow `cli.input[0]` value into the existing switch-case command dispatch.",
+            "dependencies": [
+              1
+            ],
+            "details": "Rewrite src/cli.ts to match the target implementation:\n\n1. Add `import meow from 'meow'` at the top (after the shebang).\n2. Define the meow instance with the full help text string covering all commands and environment variables.\n3. Set `importMeta: import.meta` for ESM compatibility.\n4. Define flags: `nonInteractive: { type: 'boolean', default: false }`, `audit: { type: 'boolean', default: true }`, `overwrite: { type: 'boolean', default: true }`.\n5. Replace `args[0]` with `cli.input[0]` and `args.includes('--non-interactive')` with `cli.flags.nonInteractive`.\n6. Remove the manual `--version`, `--help`, and `--non-interactive` branches — meow handles `--version` and `--help` automatically; `--non-interactive` becomes a flag.\n7. In the `post-create` case, pass `cli.flags.overwrite` to `runPostCreate`.\n8. In the default case, conditionally call `runAudit` only if `config.runAudit && cli.flags.audit`.\n9. Add `checkClaudeCodeAvailable` and `installClaudeCode` imports from `./audit.js`.\n10. Keep the `#!/usr/bin/env node` shebang as the very first line.",
+            "status": "pending",
+            "testStrategy": "Run `npm run build` to compile. Run `node dist/cli.js --help` to confirm meow-formatted help is printed. Run `node dist/cli.js --version` to confirm version is printed. Run `node dist/cli.js --unknown-flag` to confirm meow error handling works.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Add file list output and next-steps banner to default command",
+            "description": "In the default (interactive wizard) command branch, print the list of generated files with checkmarks and display a formatted next-steps banner after setup completes. Also wire the `--overwrite` flag into the `runPostCreate` call.",
+            "dependencies": [
+              2
+            ],
+            "details": "In the `default` switch case of `main()`:\n\n1. After `runPostCreate(config, cli.flags.overwrite)`, capture the returned `written` array.\n2. Set `config.generatedFiles = written`.\n3. Print `\\n[ai-init] Generated ${written.length} files:` followed by each file path prefixed with `  ✓ `.\n4. Add the separator banner:\n```\nconsole.log('\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');\nconsole.log('  Setup complete! Next steps:');\nconsole.log('  1. Fill in docs/prd.md with your project requirements');\nconsole.log('  2. Run \\'task-master parse-prd docs/prd.md\\' to generate tasks');\nconsole.log('  3. Open Claude Code and run /dev-next to start building');\nconsole.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n');\n```\n5. Also update the `post-create` case to capture and log the written file count: `console.log('[ai-init] Generated ${written.length} files.')`.\n6. Verify `runPostCreate` signature accepts an `overwrite: boolean` second parameter and returns `Promise<string[]>`.",
+            "status": "pending",
+            "testStrategy": "Run integration test in a temp directory with `SETUP_AI_NONINTERACTIVE=1` — stdout should contain `Generated N files:` and individual file paths with `✓` prefix, followed by the banner. Check `config.generatedFiles` is populated.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Add Claude Code availability check to default command flow",
+            "description": "In the default (interactive wizard) command branch, call `checkClaudeCodeAvailable()` before running the wizard. If not available, attempt installation via `installClaudeCode()` with graceful error handling.",
+            "dependencies": [
+              2
+            ],
+            "details": "In the `default` switch case, before calling `runWizard(projectRoot)`:\n\n1. Add:\n```typescript\nif (!(await checkClaudeCodeAvailable())) {\n  await installClaudeCode().catch(() => {\n    console.warn('[ai-init] Could not install Claude Code — audit will be skipped');\n  });\n}\n```\n2. Ensure `checkClaudeCodeAvailable` and `installClaudeCode` are imported from `'./audit.js'`. Check the current audit.ts exports to confirm these function names exist — if named differently, use the actual export names.\n3. This step must not block the wizard from running even if installation fails (the `.catch()` handles the error gracefully).\n4. The `--non-interactive` flow via `cli.flags.nonInteractive` should also set `process.env.SETUP_AI_NONINTERACTIVE = '1'` before calling `runWizard` — wire this in the default case based on the flag value.",
+            "status": "pending",
+            "testStrategy": "Mock `checkClaudeCodeAvailable` to return false and `installClaudeCode` to reject — the wizard should still run and the warning should be printed. Mock both to succeed — wizard runs without any warning. Verify audit.ts exports these function names.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Write integration tests for the CLI entry point",
+            "description": "Create `test/integration/cli.test.ts` with integration tests that compile and invoke the CLI in a temporary directory. Cover: non-interactive mode creates expected files, `on-create` subcommand runs without error, `--help` prints usage info, and `--version` prints the version string.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Create `test/integration/cli.test.ts`:\n\n1. Use `vitest` with `beforeEach`/`afterEach` hooks that create and remove a temp directory (`os.tmpdir() + '/' + crypto.randomUUID()`).\n2. Use Node's `child_process.execFile` (promisified) to invoke `node dist/cli.js` in the temp directory.\n3. Test cases:\n   - `--help`: stdout contains `Usage` and `Commands`, process exits 0.\n   - `--version`: stdout contains `0.` (version string), process exits 0.\n   - `SETUP_AI_NONINTERACTIVE=1 node dist/cli.js`: runs without hanging, exits 0, temp dir contains expected files like `CLAUDE.md` or `.mcp.json`.\n   - `node dist/cli.js on-create`: exits 0 (tools may already be installed — should not throw).\n4. Each test should set a 30-second timeout to accommodate the non-interactive run.\n5. Run `npm run build` before tests to ensure `dist/cli.js` is up to date — add a `beforeAll` hook or note in test that build must be run first.\n6. Run the full quality gate: `npm run format`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm test`.",
+            "status": "pending",
+            "testStrategy": "All four test cases pass. `npm run typecheck` reports zero errors. `npm run build` compiles without errors. `npm test` exits 0 with all tests green.",
+            "parentId": "undefined"
+          }
+        ],
+        "updatedAt": "2026-02-17T22:25:28.515Z"
       },
       {
         "id": "17",
@@ -1193,9 +1255,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T22:16:51.619Z",
+      "lastModified": "2026-02-17T22:25:28.516Z",
       "taskCount": 23,
-      "completedCount": 16,
+      "completedCount": 17,
       "tags": [
         "master"
       ]

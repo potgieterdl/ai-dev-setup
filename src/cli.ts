@@ -1,26 +1,56 @@
 #!/usr/bin/env node
 
+import meow from "meow";
 import { runOnCreate, runPostCreate, runPostStart } from "./phases/index.js";
 import { runWizard } from "./wizard.js";
-import { runAudit } from "./audit.js";
+import { runAudit, checkClaudeCodeAvailable, installClaudeCode } from "./audit.js";
+import { defaultConfig } from "./defaults.js";
 
-const VERSION = "0.1.0";
+const cli = meow(
+  `
+  Usage
+    $ ai-init [command] [options]
+
+  Commands
+    (none)          Interactive setup wizard
+    on-create       Heavy installs — run once during Codespace creation
+    post-create     Project scaffolding — run after Codespace creation
+    post-start      Per-session setup — run on every container start
+
+  Options
+    --non-interactive   Skip prompts, use environment variables
+    --no-audit          Skip the Claude Code audit step
+    --overwrite         Overwrite existing files (default: true)
+    --version           Show version
+    --help              Show help
+
+  Environment Variables
+    SETUP_AI_NONINTERACTIVE=1   Same as --non-interactive
+    SETUP_AI_MCPS               Comma-separated MCP names
+    SETUP_AI_TRACKER            taskmaster | beads | markdown
+    SETUP_AI_ARCH               monolith | 2-tier | 3-tier | microservices | skip
+    SETUP_AI_SKIP_AUDIT=1       Skip audit step
+    SETUP_AI_AGENT_TEAMS=1      Enable agent teams
+    SETUP_AI_PRD_PATH           Path to existing PRD file
+`,
+  {
+    importMeta: import.meta,
+    flags: {
+      nonInteractive: { type: "boolean", default: false },
+      audit: { type: "boolean", default: true },
+      overwrite: { type: "boolean", default: true },
+    },
+  }
+);
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  const command = args[0];
-
-  if (command === "--version" || command === "-v") {
-    console.log(`ai-init v${VERSION}`);
-    return;
-  }
-
-  if (command === "--help" || command === "-h") {
-    printHelp();
-    return;
-  }
-
+  const [command] = cli.input;
   const projectRoot = process.cwd();
+
+  // --non-interactive flag sets the env var so wizard reads it
+  if (cli.flags.nonInteractive || process.env.SETUP_AI_NONINTERACTIVE === "1") {
+    process.env.SETUP_AI_NONINTERACTIVE = "1";
+  }
 
   switch (command) {
     case "on-create":
@@ -28,10 +58,14 @@ async function main(): Promise<void> {
       break;
 
     case "post-create": {
-      // When run as a lifecycle phase, use wizard in non-interactive mode
-      // or with defaults if env vars aren't set
+      // Lifecycle mode: force non-interactive, run wizard + generators
+      process.env.SETUP_AI_NONINTERACTIVE = "1";
       const config = await runWizard(projectRoot);
-      await runPostCreate(config);
+      if (!cli.flags.audit) {
+        config.runAudit = false;
+      }
+      const written = await runPostCreate(config, cli.flags.overwrite);
+      printGeneratedFiles(written);
       if (config.runAudit) {
         await runAudit(config, config.generatedFiles);
       }
@@ -39,55 +73,62 @@ async function main(): Promise<void> {
     }
 
     case "post-start": {
-      const config = await runWizard(projectRoot);
+      // Lightweight per-session setup — use defaults, no full wizard needed
+      const config = defaultConfig(projectRoot);
       await runPostStart(config);
       break;
     }
 
-    case "--non-interactive": {
-      // Explicit non-interactive flag — set env var and run full flow
-      process.env.SETUP_AI_NONINTERACTIVE = "1";
-      const config = await runWizard(projectRoot);
-      await runPostCreate(config);
-      if (config.runAudit) {
-        await runAudit(config, config.generatedFiles);
-      }
-      break;
-    }
-
     default: {
-      // Default: interactive wizard (F6)
+      // Default: interactive wizard flow (F6)
+
+      // Step 0: Ensure Claude Code is installed for audit capability
+      if (!(await checkClaudeCodeAvailable())) {
+        await installClaudeCode().catch(() => {
+          console.warn("[ai-init] Could not install Claude Code — audit will be skipped.");
+        });
+      }
+
       const config = await runWizard(projectRoot);
-      await runPostCreate(config);
+
+      // Apply CLI flags
+      if (!cli.flags.audit) {
+        config.runAudit = false;
+      }
+
+      const written = await runPostCreate(config, cli.flags.overwrite);
+      printGeneratedFiles(written);
+
       if (config.runAudit) {
         await runAudit(config, config.generatedFiles);
       }
-      break;
+
+      printNextSteps(config.taskTracker);
     }
   }
 }
 
-function printHelp(): void {
-  console.log(`ai-init v${VERSION}
+function printGeneratedFiles(files: string[]): void {
+  console.log(`\n[ai-init] Generated ${files.length} files:`);
+  for (const f of files) {
+    console.log(`  \u2713 ${f}`);
+  }
+}
 
-Usage:
-  ai-init                    Interactive wizard
-  ai-init on-create          Codespace lifecycle: install global tools
-  ai-init post-create        Codespace lifecycle: generate project files
-  ai-init post-start         Codespace lifecycle: per-session setup
-  ai-init --non-interactive  Env-var driven, no prompts
-
-Environment variables (for --non-interactive or SETUP_AI_NONINTERACTIVE=1):
-  SETUP_AI_MCPS              Comma-separated MCP server names (e.g. taskmaster,context7)
-  SETUP_AI_TRACKER           Task tracker: taskmaster | beads | markdown
-  SETUP_AI_ARCH              Architecture: monolith | 2-tier | 3-tier | microservices | skip
-  SETUP_AI_AGENT_TEAMS       Set to 1 to enable agent teams
-  SETUP_AI_SKIP_AUDIT        Set to 1 to skip AI audit
-  SETUP_AI_PRD_PATH          Path to existing PRD file
-
-Options:
-  -h, --help       Show this help message
-  -v, --version    Show version number`);
+function printNextSteps(tracker: string): void {
+  console.log(
+    "\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501"
+  );
+  console.log("  Setup complete! Next steps:");
+  console.log("  1. Fill in docs/prd.md with your project requirements");
+  console.log("  2. Review docs/architecture.md and add specifics");
+  console.log("  3. Open Claude Code and run /dev-next to start building");
+  if (tracker === "taskmaster") {
+    console.log("  4. Parse your PRD: task-master parse-prd docs/prd.md");
+  }
+  console.log(
+    "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n"
+  );
 }
 
 main().catch((err: unknown) => {
