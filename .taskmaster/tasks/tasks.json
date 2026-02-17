@@ -89,8 +89,79 @@
         "dependencies": [
           "1"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create src/types.ts with all exported TypeScript type definitions",
+            "description": "Create the `src/types.ts` file containing all shared TypeScript types: `TaskTracker`, `Architecture`, `McpServer`, `FileDescriptor`, `ProjectConfig`, and `AuditResult` interfaces as specified in the task details.",
+            "dependencies": [],
+            "details": "Create `/workspaces/ai-dev-setup/src/types.ts` with strict TypeScript. Export `TaskTracker` as a union type of `'taskmaster' | 'beads' | 'markdown'`. Export `Architecture` as `'monolith' | '2-tier' | '3-tier' | 'microservices' | 'skip'`. Export `McpServer` interface with fields: `name`, `description`, `npmPackage`, `claudeMcpName`, `required`, optional `args?: string[]`, optional `env?: Record<string, string>`. Export `FileDescriptor` interface with `path`, `content`, and optional `executable?: boolean`. Export `ProjectConfig` interface with all fields listed in the task: `selectedMcps`, `taskTracker`, `architecture`, `prdPath?`, `hasPrd`, `generateDocs`, `generateRules`, `generateSkills`, `generateHooks`, `generateCommands`, `agentTeamsEnabled`, `runAudit`, `hasApiDocs`, `hasDatabase`, `projectName`, `projectRoot`, `generatedFiles`. Export `AuditResult` interface with `passes`, `fills` (array of objects with `file`, `section`, `message`), `fixes` (array of objects with `file`, `issue`, `fix`), and `postSetupChecklist`. The file must use ESM syntax compatible with `\"type\": \"module\"` in package.json and `\"module\": \"ESNext\"` in tsconfig.",
+            "status": "done",
+            "testStrategy": "Run `npm run typecheck` to verify zero TypeScript errors. Import `ProjectConfig` and `FileDescriptor` in a test file to verify type shapes.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T19:49:36.677Z"
+          },
+          {
+            "id": 2,
+            "title": "Create src/defaults.ts with defaultConfig factory function",
+            "description": "Create the `src/defaults.ts` file that exports a `defaultConfig(projectRoot: string): ProjectConfig` function returning a fully-populated default configuration object.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create `/workspaces/ai-dev-setup/src/defaults.ts`. Import `ProjectConfig` from `'./types.js'` (must use `.js` extension for ESM resolution with `moduleResolution: bundler`). Import `path` from `'node:path'`. Implement and export `defaultConfig(projectRoot: string): ProjectConfig` returning an object with: `selectedMcps: ['taskmaster']`, `taskTracker: 'taskmaster'`, `architecture: 'skip'`, `hasPrd: false`, `generateDocs: true`, `generateRules: true`, `generateSkills: true`, `generateHooks: true`, `generateCommands: true`, `agentTeamsEnabled: false`, `runAudit: true`, `hasApiDocs: false`, `hasDatabase: false`, `projectName: path.basename(projectRoot)`, `projectRoot`, `generatedFiles: []`. Note: `prdPath` is intentionally omitted (optional field, undefined by default). Ensure all required `ProjectConfig` fields are covered so TypeScript does not complain about missing properties.",
+            "status": "done",
+            "testStrategy": "Call `defaultConfig('/some/path/myproject')` and assert `projectName === 'myproject'`, `taskTracker === 'taskmaster'`, `generatedFiles` is an empty array, and `hasPrd === false`.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T19:49:48.342Z"
+          },
+          {
+            "id": 3,
+            "title": "Verify tsconfig.json covers src/types.ts and src/defaults.ts",
+            "description": "Confirm the existing `tsconfig.json` `include` pattern covers the new files and that module resolution settings are compatible with `.js` extension imports in ESM.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Read `/workspaces/ai-dev-setup/tsconfig.json`. The current config includes `\"include\": [\"src\"]` and uses `\"moduleResolution\": \"bundler\"` with `\"module\": \"ESNext\"`. Confirm that `src/types.ts` and `src/defaults.ts` are within scope. Verify that using `import { ProjectConfig } from './types.js'` inside `src/defaults.ts` is valid under `moduleResolution: bundler` (it is — bundler mode allows omitting extensions but also accepts explicit `.js`). If any tsconfig issues are found (e.g., `rootDir` mismatch), correct them. Run `npm run typecheck` to confirm zero errors after both files are created.",
+            "status": "done",
+            "testStrategy": "Run `npx tsc --noEmit` from the project root. Expect exit code 0 with no diagnostic output.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T19:49:49.047Z"
+          },
+          {
+            "id": 4,
+            "title": "Write unit test for types and defaultConfig in test/types.test.ts",
+            "description": "Create `test/types.test.ts` using Vitest that imports `ProjectConfig`, `FileDescriptor` from `src/types.ts` and `defaultConfig` from `src/defaults.ts`, then asserts correct shape and values.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Create `/workspaces/ai-dev-setup/test/types.test.ts`. Use Vitest (`import { describe, it, expect } from 'vitest'`). Import `defaultConfig` from `'../src/defaults.js'`. Import types `ProjectConfig` and `FileDescriptor` from `'../src/types.js'` (TypeScript imports only — used for type assertions). Write a `describe('defaultConfig', ...)` block with tests: (1) `defaultConfig('/tmp/myproject').projectName` equals `'myproject'`; (2) `defaultConfig('/tmp/myproject').taskTracker` equals `'taskmaster'`; (3) `defaultConfig('/tmp/myproject').generatedFiles` is an empty array; (4) `defaultConfig('/tmp/myproject').hasPrd` is `false`; (5) a `FileDescriptor` shape test that constructs `{ path: 'foo.md', content: 'bar' }` and checks it satisfies the interface (via TypeScript compile check, not runtime assertion). Ensure the test file is not inside `src/` since `tsconfig.json` only includes `src` — Vitest picks up test files from the project root via its own config.",
+            "status": "done",
+            "testStrategy": "Run `npm test` and verify all assertions in `test/types.test.ts` pass with exit code 0.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T19:50:10.706Z"
+          },
+          {
+            "id": 5,
+            "title": "Run full quality gate: format, lint, typecheck, build, and test",
+            "description": "Execute the mandatory pre-completion checklist — format, lint, typecheck, build, and test — fixing any failures before marking the task done.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Run the following commands in order from `/workspaces/ai-dev-setup`: (1) `npm run format` — Prettier formats `src/types.ts`, `src/defaults.ts`, and `test/types.test.ts`. (2) `npm run lint` — ESLint checks `src/**/*.ts` and `test/**/*.ts`; fix any lint errors in the new files. (3) `npm run typecheck` — `tsc --noEmit` must exit with 0 errors. (4) `npm run build` — `tsc` compiles to `dist/`; verify `dist/types.d.ts` and `dist/defaults.d.ts` are emitted. (5) `npm test` — Vitest runs all tests including `test/types.test.ts`; all must pass. If any step fails, fix the issue and re-run from that step. Common issues to watch for: missing `.js` extension on relative imports in ESM, unused type imports triggering lint warnings, or `strict: true` requiring explicit return types.",
+            "status": "done",
+            "testStrategy": "All five commands (`format`, `lint`, `typecheck`, `build`, `test`) must exit with code 0. Confirm `dist/types.d.ts` exists and exports `ProjectConfig`. Confirm `dist/defaults.js` exports `defaultConfig`.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T19:50:46.363Z"
+          }
+        ],
+        "updatedAt": "2026-02-17T19:50:46.363Z"
       },
       {
         "id": "3",
@@ -396,9 +467,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T19:36:39.536Z",
+      "lastModified": "2026-02-17T19:50:46.363Z",
       "taskCount": 23,
-      "completedCount": 1,
+      "completedCount": 2,
       "tags": [
         "master"
       ]
