@@ -841,8 +841,88 @@
           "3",
           "13"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create src/wizard.ts with all 10 interactive steps",
+            "description": "Implement the full wizard module with all 10 setup steps using @inquirer/prompts, supporting both interactive and non-interactive (env var) modes.",
+            "dependencies": [],
+            "details": "Create /workspaces/ai-dev-setup/src/wizard.ts exactly as specified in the task details. The file must:\n1. Import select, checkbox, confirm, input from '@inquirer/prompts'\n2. Import ProjectConfig, TaskTracker, Architecture from './types.js'\n3. Import MCP_REGISTRY from './registry.js'\n4. Import defaultConfig from './defaults.js'\n5. Define NON_INTERACTIVE constant from env var SETUP_AI_NONINTERACTIVE\n6. Implement fromEnv<T> helper for env var overrides\n7. Export async runWizard(projectRoot: string): Promise<ProjectConfig>\n8. Step 1: MCP server selection — multi-select checkbox from MCP_REGISTRY entries, default taskmaster checked. Env override: SETUP_AI_MCPS (comma-separated)\n9. Step 2: Task tracker selection — select from taskmaster/beads/markdown. Env override: SETUP_AI_TRACKER\n10. Step 3: PRD path — input prompt asking for optional path to existing PRD file, sets config.hasPrd and config.prdPath. Env override: SETUP_AI_PRD_PATH\n11. Step 4: Architecture picker — select from skip/monolith/2-tier/3-tier/microservices. Env override: SETUP_AI_ARCH\n12. Step 5: API docs toggle — confirm prompt, default true when architecture is 2-tier/3-tier/microservices. Env override: SETUP_AI_API_DOCS\n13. Step 6: Database toggle — confirm prompt, default true when architecture is 3-tier. Env override: SETUP_AI_DB\n14. Step 7: Docs/rules/skills/hooks/commands generation flags — confirm prompts for each. Env overrides: SETUP_AI_GEN_DOCS, etc.\n15. Step 8: Agent teams opt-in — confirm, default false. Env override: SETUP_AI_AGENT_TEAMS=1\n16. Step 9: Audit toggle — confirm, default true. Env override: SETUP_AI_SKIP_AUDIT=1\n17. Step 10: Display summary of collected config (projectName, tracker, architecture, selected MCPs, feature flags) and any next-step instructions\n18. Return the populated config object",
+            "status": "done",
+            "testStrategy": "Manual smoke test: run `npx tsx src/cli.ts` and verify wizard prompts appear and return valid ProjectConfig.",
+            "updatedAt": "2026-02-17T22:04:27.435Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Integrate wizard into src/cli.ts as default command",
+            "description": "Update cli.ts to invoke runWizard() when no lifecycle subcommand is provided, then call post-create phase with the resulting config.",
+            "dependencies": [
+              1
+            ],
+            "details": "Read /workspaces/ai-dev-setup/src/cli.ts and update the default case (currently prints version). Changes:\n1. Import runWizard from './wizard.js'\n2. Import the post-create phase runner (or relevant orchestration function) from './phases/post-create.js'\n3. In the default command handler (the else/fallthrough branch after lifecycle commands), call: const config = await runWizard(process.cwd()); then invoke the appropriate orchestration to generate and write files using that config\n4. Ensure the wizard path is async (wrap in async IIFE or mark the handler async if needed)\n5. Add a --interactive / -i flag alias if a non-interactive path also exists, for clarity\n6. Preserve existing on-create, post-create, post-start subcommand handling unchanged",
+            "status": "done",
+            "testStrategy": "Run `npx tsx src/cli.ts --help` to verify help output, run `npx tsx src/cli.ts on-create` to verify lifecycle commands still work.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:05:06.988Z"
+          },
+          {
+            "id": 3,
+            "title": "Write unit tests for wizard non-interactive mode",
+            "description": "Create test/wizard.test.ts with tests covering non-interactive env var mode to ensure all config fields are correctly set without any prompts.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create /workspaces/ai-dev-setup/test/wizard.test.ts:\n1. Import runWizard from '../src/wizard.js'\n2. Import defaultConfig from '../src/defaults.js'\n3. Use a makeConfig helper consistent with other test files\n4. Test: SETUP_AI_NONINTERACTIVE=1 with no other vars returns config with defaults (selectedMcps=['taskmaster'], taskTracker='taskmaster', architecture='skip', agentTeamsEnabled=false, runAudit=true)\n5. Test: SETUP_AI_MCPS=taskmaster,context7 sets selectedMcps to ['taskmaster','context7']\n6. Test: SETUP_AI_TRACKER=beads sets taskTracker to 'beads'\n7. Test: SETUP_AI_ARCH=3-tier sets architecture to '3-tier'\n8. Test: SETUP_AI_AGENT_TEAMS=1 sets agentTeamsEnabled to true\n9. Test: SETUP_AI_SKIP_AUDIT=1 sets runAudit to false\n10. Each test must set process.env vars before calling runWizard and restore/delete them in afterEach\n11. Use vitest describe/it/expect/beforeEach/afterEach patterns consistent with existing tests\n12. Verify returned object satisfies ProjectConfig shape (all required fields present)",
+            "status": "done",
+            "testStrategy": "Run `npm test` and verify all new wizard tests pass with no errors.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:06:00.315Z"
+          },
+          {
+            "id": 4,
+            "title": "Run formatter, linter, and type-checker",
+            "description": "Execute npm run format, npm run lint, and npx tsc --noEmit to ensure wizard.ts and cli.ts changes meet project code quality standards.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Execute the project's quality gate commands in order:\n1. Run `npm run format` (prettier --write) — auto-fixes formatting issues in all files including src/wizard.ts, src/cli.ts, and test/wizard.test.ts\n2. Run `npm run lint` (eslint --fix) — auto-fixes lint errors; review any remaining warnings\n3. Run `npx tsc --noEmit` — verify TypeScript compilation passes with zero errors; fix any type errors in wizard.ts (especially the fromEnv<T> helper and type assertions for TaskTracker/Architecture)\n4. Common type issues to watch: ensuring select() return values are cast to TaskTracker/Architecture, ensuring checkbox returns string[], ensuring confirm returns boolean\n5. Fix any issues found and re-run the respective command until it passes",
+            "status": "done",
+            "testStrategy": "All three commands exit with code 0 and produce no errors.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:07:02.666Z"
+          },
+          {
+            "id": 5,
+            "title": "Run build and full test suite",
+            "description": "Execute npm run build and npm test to verify the wizard implementation compiles successfully and all tests pass.",
+            "dependencies": [
+              4
+            ],
+            "details": "Execute the build and test commands:\n1. Run `npm run build` — compiles TypeScript to dist/; verify exit code 0 and dist/wizard.js is emitted\n2. Run `npm test` (vitest run) — runs all tests in test/**/*.test.ts; verify all pass including the new test/wizard.test.ts\n3. If build fails: check for missing imports, incorrect module paths (must use .js extensions for ESM), or unresolved types\n4. If tests fail: review error output, fix logic in wizard.ts or test assertions, re-run\n5. Pay attention to: ESM import paths must use .js extension (e.g., './types.js' not './types'), async/await correctness, env var cleanup between tests",
+            "status": "done",
+            "testStrategy": "npm run build exits 0, npm test exits 0 with all test suites passing.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:07:09.393Z"
+          },
+          {
+            "id": 6,
+            "title": "Log implementation findings and mark task complete",
+            "description": "Use update_subtask to record implementation notes, confirm all quality gates passed, then set task 14 status to done.",
+            "dependencies": [
+              5
+            ],
+            "details": "Perform final task completion steps:\n1. Use the taskmaster-ai MCP tool `update_subtask` (or task-master CLI) to log implementation notes on task 14, including: what was implemented, any design decisions made (e.g. how fromEnv<T> handles type coercion), any issues encountered and fixed during format/lint/typecheck/build/test, and confirmation all checks passed\n2. Verify the summary/next-steps display (Step 10 of wizard) works correctly by reviewing the console.log output format\n3. Confirm test/wizard.test.ts covers all env var overrides defined in the task spec\n4. Call `set_task_status --id=14 --status=done` via MCP or CLI to mark the task complete\n5. If any quality gate failed and could not be fixed, set status to 'blocked' with explanation instead",
+            "status": "done",
+            "testStrategy": "Task 14 status transitions to 'done' in .taskmaster/tasks/tasks.json after all prior steps succeed.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:07:53.245Z"
+          }
+        ],
+        "updatedAt": "2026-02-17T22:07:53.245Z"
       },
       {
         "id": "15",
@@ -1043,9 +1123,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T21:55:03.593Z",
+      "lastModified": "2026-02-17T22:07:53.245Z",
       "taskCount": 23,
-      "completedCount": 14,
+      "completedCount": 15,
       "tags": [
         "master"
       ]
