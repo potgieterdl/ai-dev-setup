@@ -762,8 +762,73 @@
           "11",
           "12"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create src/phases/on-create.ts with global tool installation logic",
+            "description": "Implement the on-create phase module that installs Claude Code and Task Master globally if not already present, using the existing `run` and `commandExists` utilities from `src/utils.ts`.",
+            "dependencies": [],
+            "details": "Create `/workspaces/ai-dev-setup/src/phases/on-create.ts`. Import `run` and `commandExists` from `../utils.js`. Export an async `runOnCreate(): Promise<void>` function. Log `[ai-init] Phase: on-create — installing global tools...` at the start. Use `commandExists('claude')` to conditionally run `npm install -g @anthropic-ai/claude-code`. Use `commandExists('task-master')` to conditionally run `npm install -g task-master-ai`. Log `[ai-init] on-create complete.` at the end. Do not hardcode package versions — use `@latest` or no version pin so npm resolves the current version.",
+            "status": "done",
+            "testStrategy": "Unit test in `test/phases/on-create.test.ts` using vitest. Mock `commandExists` and `run` from `../../src/utils.js`. Verify: (1) when both commands exist, `run` is never called; (2) when `claude` is missing, `run` is called with `['install', '-g', '@anthropic-ai/claude-code']`; (3) when `task-master` is missing, `run` is called with `['install', '-g', 'task-master-ai']`; (4) function resolves without throwing when all installs succeed.",
+            "updatedAt": "2026-02-17T21:54:35.375Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Create src/phases/post-create.ts orchestrating all generators",
+            "description": "Implement the post-create phase module that imports and invokes all 8 generators, collects their FileDescriptor arrays, and writes everything to disk via `writeFiles`, returning the list of written paths.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create `/workspaces/ai-dev-setup/src/phases/post-create.ts`. Import `ProjectConfig` from `../types.js` and `writeFiles` from `../utils.js`. Import all 8 generators: `generateMcpJson` from `../generators/mcp-json.js`, `generateClaudeMd` from `../generators/claude-md.js`, `generateDocs` from `../generators/docs.js`, `generateRules` from `../generators/rules.js`, `generateSkills` from `../generators/skills.js`, `generateHooks` from `../generators/hooks.js`, `generateDevcontainer` from `../generators/devcontainer.js`, and `generateCommands` from `../generators/commands.js`. Export an async `runPostCreate(config: ProjectConfig, overwrite = true): Promise<string[]>` function. Conditionally await async generators based on config feature flags (e.g., `config.generateDocs`, `config.generateRules`, etc.) while always running `generateMcpJson`, `generateClaudeMd`, and `generateDevcontainer`. Spread all FileDescriptor arrays into `allFiles`, call `writeFiles(allFiles, config.projectRoot, overwrite)`, and return the result.",
+            "status": "done",
+            "testStrategy": "Integration test in `test/integration/phases.test.ts` using a temp directory (`os.tmpdir()` + random suffix, cleaned in `afterEach`). Verify: (1) `runPostCreate` with a minimal config creates expected files; (2) with `overwrite: false`, existing files are not overwritten; (3) return value contains relative paths of written files; (4) conditional generators (docs, rules, skills, hooks, commands) are skipped when their flags are false; (5) all required generators always run regardless of flags.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:54:44.451Z"
+          },
+          {
+            "id": 3,
+            "title": "Create src/phases/post-start.ts with env sync and welcome banner",
+            "description": "Implement the post-start phase module that reads API key environment variables and syncs them to `.env` if missing, then reads task progress from `.taskmaster/tasks/tasks.json` or `TASKS.md` and prints a formatted welcome banner.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create `/workspaces/ai-dev-setup/src/phases/post-start.ts`. Import `ProjectConfig` from `../types.js`, `readOptional` from `../utils.js`, and `fs` from `node:fs/promises` and `path` from `node:path`. Export an async `runPostStart(config: ProjectConfig): Promise<void>` function. Step 1 — env sync: define a list of well-known API key names (`ANTHROPIC_API_KEY`, `PERPLEXITY_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`). Read `.env` from `config.projectRoot` using `readOptional`. For each key present in `process.env` but absent from the `.env` file content, append `KEY=VALUE` lines. Write the updated `.env` back only if changes were made. Step 2 — task banner: if `config.taskTracker === 'taskmaster'`, read `.taskmaster/tasks/tasks.json` and count tasks by status (`pending`, `in-progress`, `done`); otherwise read `TASKS.md` and count unchecked `- [ ]` lines vs checked `- [x]` lines. Print a banner with `[ai-init] Welcome back!`, project name, and task counts. Gracefully handle missing files (print zero counts or skip).",
+            "status": "done",
+            "testStrategy": "Unit test in `test/phases/post-start.test.ts` using a temp directory. Verify: (1) when `.env` is missing and env vars are set, a `.env` file is created with those vars; (2) when `.env` already contains the key, it is not duplicated; (3) with a valid `tasks.json` containing mixed-status tasks, the banner prints correct pending/done counts; (4) with a `TASKS.md` containing `- [ ]` and `- [x]` lines, markdown counts are reported; (5) when neither file exists, function completes without throwing.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:54:51.071Z"
+          },
+          {
+            "id": 4,
+            "title": "Add phases barrel export and integrate phases into src/cli.ts",
+            "description": "Create a `src/phases/index.ts` barrel that re-exports all three phase functions, then wire them into `src/cli.ts` so that `ai-init on-create`, `ai-init post-create`, and `ai-init post-start` subcommands invoke the correct phase.",
+            "dependencies": [
+              3
+            ],
+            "details": "Create `/workspaces/ai-dev-setup/src/phases/index.ts` with three named re-exports: `export { runOnCreate } from './on-create.js'`, `export { runPostCreate } from './post-create.js'`, and `export { runPostStart } from './post-start.js'`. Then read the current `src/cli.ts`. Add a `switch` (or `if/else`) on `process.argv[2]` to handle three subcommands: `'on-create'` → `await runOnCreate()`, `'post-create'` → load config (from `.taskmaster/tasks/tasks.json` or a persisted `ai-init.config.json` if it exists, else use `defaultConfig(process.cwd())`) then `await runPostCreate(config)`, `'post-start'` → similarly load config then `await runPostStart(config)`. Print usage and exit with code 1 for unknown subcommands. Ensure the CLI entry is the file listed as `bin` in `package.json`.",
+            "status": "done",
+            "testStrategy": "Smoke test by running `npx tsx src/cli.ts --help` (or the built binary) and verifying it does not throw. Integration test: spawn `tsx src/cli.ts on-create` in a subprocess with mocked PATH (where `claude` and `task-master` are fake scripts) and assert exit code 0. Also test that an unknown subcommand exits with code 1.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:54:57.308Z"
+          },
+          {
+            "id": 5,
+            "title": "Run quality gates and fix all lint, type, build, and test failures",
+            "description": "Run the full quality pipeline (format, lint, typecheck, build, test) against the new phase files and integration tests, and fix any issues found before the task can be marked done.",
+            "dependencies": [
+              4
+            ],
+            "details": "From `/workspaces/ai-dev-setup`, run the following commands in order and fix all errors before proceeding to the next step: (1) `npm run format` — applies Prettier to all source and test files; (2) `npm run lint` — runs ESLint with auto-fix, resolve any remaining errors; (3) `npm run typecheck` — runs `tsc --noEmit`, fix all TypeScript type errors in the three new phase files, the barrel export, and any updated cli.ts; (4) `npm run build` — compiles TypeScript to `dist/`, resolve any compilation errors; (5) `npm test` — runs the full Vitest suite including the new phase tests and existing generator tests, ensure all 300+ existing tests still pass and new phase tests pass. Log findings using `update_subtask` before marking the task chain done.",
+            "status": "done",
+            "testStrategy": "All five npm scripts must exit with code 0. Specifically: `npm run format` makes no further changes when re-run; `npm run lint` reports zero errors; `npm run typecheck` reports zero errors; `npm run build` produces `dist/phases/on-create.js`, `dist/phases/post-create.js`, `dist/phases/post-start.js`, and `dist/phases/index.js`; `npm test` reports all tests passing with no skipped phase tests.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:55:03.588Z"
+          }
+        ],
+        "updatedAt": "2026-02-17T21:55:03.588Z"
       },
       {
         "id": "14",
@@ -978,9 +1043,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T21:44:20.715Z",
+      "lastModified": "2026-02-17T21:55:03.593Z",
       "taskCount": 23,
-      "completedCount": 13,
+      "completedCount": 14,
       "tags": [
         "master"
       ]
