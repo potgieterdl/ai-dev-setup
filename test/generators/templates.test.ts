@@ -4,6 +4,11 @@ import path from "node:path";
 import { fillTemplate } from "../../src/utils.js";
 
 const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/docs");
+const RULES_DIR = path.resolve(__dirname, "../../templates/rules");
+const SKILLS_DIR = path.resolve(__dirname, "../../templates/skills");
+const HOOKS_DIR = path.resolve(__dirname, "../../templates/hooks");
+const COMMANDS_DIR = path.resolve(__dirname, "../../templates/commands");
+const TEMPLATES_ROOT = path.resolve(__dirname, "../../templates");
 
 const EXPECTED_TEMPLATES = [
   "doc_format.md",
@@ -150,5 +155,371 @@ describe("document templates", () => {
       );
       expect(content).toContain("Depends on");
     });
+  });
+});
+
+/* ──────────────────────────────────────────────────────────
+ * Rules template tests (F3)
+ * ────────────────────────────────────────────────────────── */
+
+const EXPECTED_RULES = [
+  "general.md",
+  "docs.md",
+  "testing.md",
+  "git.md",
+  "security.md",
+  "api.md",
+  "database.md",
+  "config.md",
+  "agent-teams.md",
+];
+
+describe("rules templates", () => {
+  describe("all rules template files exist", () => {
+    for (const file of EXPECTED_RULES) {
+      it(`templates/rules/${file} exists`, async () => {
+        await expect(
+          fs.access(path.join(RULES_DIR, file)),
+        ).resolves.toBeUndefined();
+      });
+    }
+  });
+
+  describe("no rules template exceeds 500 lines", () => {
+    for (const file of EXPECTED_RULES) {
+      it(`${file} is under 500 lines`, async () => {
+        const content = await fs.readFile(path.join(RULES_DIR, file), "utf8");
+        const lineCount = content.split("\n").length;
+        expect(lineCount).toBeLessThanOrEqual(500);
+      });
+    }
+  });
+
+  describe("all rules have YAML frontmatter with paths or description", () => {
+    for (const file of EXPECTED_RULES) {
+      it(`${file} has YAML frontmatter`, async () => {
+        const content = await fs.readFile(path.join(RULES_DIR, file), "utf8");
+        expect(content).toMatch(/^---\n/);
+        expect(content).toMatch(/\n---\n/);
+      });
+
+      it(`${file} has a description field`, async () => {
+        const content = await fs.readFile(path.join(RULES_DIR, file), "utf8");
+        expect(content).toMatch(/description:/);
+      });
+    }
+  });
+
+  describe("testing.md rule content", () => {
+    it("contains 'Integration tests' section", async () => {
+      const content = await fs.readFile(
+        path.join(RULES_DIR, "testing.md"),
+        "utf8",
+      );
+      expect(content).toMatch(/Integration [Tt]ests/);
+    });
+
+    it("contains 'Demo checkpoints' section", async () => {
+      const content = await fs.readFile(
+        path.join(RULES_DIR, "testing.md"),
+        "utf8",
+      );
+      expect(content).toMatch(/Demo [Cc]heckpoints/i);
+    });
+
+    it("contains 'Quality gate' section", async () => {
+      const content = await fs.readFile(
+        path.join(RULES_DIR, "testing.md"),
+        "utf8",
+      );
+      expect(content).toMatch(/Quality [Gg]ate/i);
+    });
+  });
+
+  describe("git.md rule content", () => {
+    it("contains branch naming pattern feat/<task-id>", async () => {
+      const content = await fs.readFile(path.join(RULES_DIR, "git.md"), "utf8");
+      expect(content).toContain("feat/<task-id>");
+    });
+
+    it("contains commit message format", async () => {
+      const content = await fs.readFile(path.join(RULES_DIR, "git.md"), "utf8");
+      expect(content).toContain("<task-id>:");
+    });
+  });
+
+  describe("security.md rule content", () => {
+    it("contains OWASP reference", async () => {
+      const content = await fs.readFile(
+        path.join(RULES_DIR, "security.md"),
+        "utf8",
+      );
+      expect(content).toMatch(/OWASP/i);
+    });
+
+    it("has paths scoped to auth and middleware", async () => {
+      const content = await fs.readFile(
+        path.join(RULES_DIR, "security.md"),
+        "utf8",
+      );
+      expect(content).toContain("src/auth/**");
+      expect(content).toContain("src/middleware/**");
+    });
+  });
+
+  describe("general.md rule content", () => {
+    it("contains {{LANGUAGE}} placeholder", async () => {
+      const content = await fs.readFile(
+        path.join(RULES_DIR, "general.md"),
+        "utf8",
+      );
+      expect(content).toContain("{{LANGUAGE}}");
+    });
+  });
+
+  describe("api.md rule content", () => {
+    it("references @docs/api.md", async () => {
+      const content = await fs.readFile(path.join(RULES_DIR, "api.md"), "utf8");
+      expect(content).toContain("@docs/api.md");
+    });
+
+    it("has paths scoped to api and routes", async () => {
+      const content = await fs.readFile(path.join(RULES_DIR, "api.md"), "utf8");
+      expect(content).toContain("src/api/**");
+      expect(content).toContain("src/routes/**");
+    });
+  });
+});
+
+/* ──────────────────────────────────────────────────────────
+ * Skills template tests (F3)
+ * ────────────────────────────────────────────────────────── */
+
+const EXPECTED_SKILLS = ["testing.md", "commit.md", "task-workflow.md"];
+
+describe("skills templates", () => {
+  describe("all skills template files exist", () => {
+    for (const file of EXPECTED_SKILLS) {
+      it(`templates/skills/${file} exists`, async () => {
+        await expect(
+          fs.access(path.join(SKILLS_DIR, file)),
+        ).resolves.toBeUndefined();
+      });
+    }
+  });
+
+  describe("all skills have YAML frontmatter with description", () => {
+    for (const file of EXPECTED_SKILLS) {
+      it(`${file} has YAML frontmatter with description`, async () => {
+        const content = await fs.readFile(path.join(SKILLS_DIR, file), "utf8");
+        expect(content).toMatch(/^---\n/);
+        expect(content).toMatch(/description:/);
+      });
+    }
+  });
+
+  describe("testing.md skill content", () => {
+    it("covers integration-first philosophy", async () => {
+      const content = await fs.readFile(
+        path.join(SKILLS_DIR, "testing.md"),
+        "utf8",
+      );
+      expect(content).toMatch(/[Ii]ntegration/);
+    });
+
+    it("mentions demo test pattern", async () => {
+      const content = await fs.readFile(
+        path.join(SKILLS_DIR, "testing.md"),
+        "utf8",
+      );
+      expect(content).toMatch(/demo/i);
+    });
+  });
+
+  describe("commit.md skill content", () => {
+    it("includes the quality gate steps", async () => {
+      const content = await fs.readFile(
+        path.join(SKILLS_DIR, "commit.md"),
+        "utf8",
+      );
+      expect(content).toContain("Format");
+      expect(content).toContain("Lint");
+      expect(content).toContain("Type-check");
+      expect(content).toContain("Build");
+      expect(content).toContain("Test");
+    });
+  });
+
+  describe("task-workflow.md skill content", () => {
+    it("covers picking, implementing, and completing a task", async () => {
+      const content = await fs.readFile(
+        path.join(SKILLS_DIR, "task-workflow.md"),
+        "utf8",
+      );
+      expect(content).toMatch(/Picking a Task/i);
+      expect(content).toMatch(/Implementing a Task/i);
+      expect(content).toMatch(/Completing a Task/i);
+    });
+  });
+});
+
+/* ──────────────────────────────────────────────────────────
+ * Hooks template tests (F3)
+ * ────────────────────────────────────────────────────────── */
+
+describe("hooks templates", () => {
+  it("templates/hooks/pre-commit.sh exists", async () => {
+    await expect(
+      fs.access(path.join(HOOKS_DIR, "pre-commit.sh")),
+    ).resolves.toBeUndefined();
+  });
+
+  it("pre-commit.sh contains --if-present flag", async () => {
+    const content = await fs.readFile(
+      path.join(HOOKS_DIR, "pre-commit.sh"),
+      "utf8",
+    );
+    expect(content).toContain("--if-present");
+  });
+
+  it("pre-commit.sh uses set -euo pipefail", async () => {
+    const content = await fs.readFile(
+      path.join(HOOKS_DIR, "pre-commit.sh"),
+      "utf8",
+    );
+    expect(content).toContain("set -euo pipefail");
+  });
+
+  it("pre-commit.sh has correct exit codes on failure", async () => {
+    const content = await fs.readFile(
+      path.join(HOOKS_DIR, "pre-commit.sh"),
+      "utf8",
+    );
+    expect(content).toContain("exit 1");
+  });
+
+  it("pre-commit.sh starts with shebang", async () => {
+    const content = await fs.readFile(
+      path.join(HOOKS_DIR, "pre-commit.sh"),
+      "utf8",
+    );
+    expect(content.startsWith("#!/usr/bin/env bash")).toBe(true);
+  });
+
+  it("pre-commit.sh runs format, lint, typecheck, build, and test", async () => {
+    const content = await fs.readFile(
+      path.join(HOOKS_DIR, "pre-commit.sh"),
+      "utf8",
+    );
+    expect(content).toContain("npm run format");
+    expect(content).toContain("npm run lint");
+    expect(content).toContain("npm run typecheck");
+    expect(content).toContain("npm run build");
+    expect(content).toContain("npm test");
+  });
+});
+
+/* ──────────────────────────────────────────────────────────
+ * Commands template tests (F8)
+ * ────────────────────────────────────────────────────────── */
+
+const EXPECTED_COMMANDS = ["dev-next.md", "review.md"];
+
+describe("commands templates", () => {
+  describe("all commands template files exist", () => {
+    for (const file of EXPECTED_COMMANDS) {
+      it(`templates/commands/${file} exists`, async () => {
+        await expect(
+          fs.access(path.join(COMMANDS_DIR, file)),
+        ).resolves.toBeUndefined();
+      });
+    }
+  });
+
+  describe("dev-next.md command content", () => {
+    it("references docs/prd.md", async () => {
+      const content = await fs.readFile(
+        path.join(COMMANDS_DIR, "dev-next.md"),
+        "utf8",
+      );
+      expect(content).toContain("docs/prd.md");
+    });
+
+    it("references docs/adr/", async () => {
+      const content = await fs.readFile(
+        path.join(COMMANDS_DIR, "dev-next.md"),
+        "utf8",
+      );
+      expect(content).toContain("docs/adr/");
+    });
+
+    it("includes commit format reference", async () => {
+      const content = await fs.readFile(
+        path.join(COMMANDS_DIR, "dev-next.md"),
+        "utf8",
+      );
+      expect(content).toContain("<task-id>");
+    });
+  });
+
+  describe("review.md command content", () => {
+    it("includes git diff step", async () => {
+      const content = await fs.readFile(
+        path.join(COMMANDS_DIR, "review.md"),
+        "utf8",
+      );
+      expect(content).toContain("git diff");
+    });
+
+    it("includes quality gate reference", async () => {
+      const content = await fs.readFile(
+        path.join(COMMANDS_DIR, "review.md"),
+        "utf8",
+      );
+      expect(content).toMatch(/quality gate/i);
+    });
+  });
+});
+
+/* ──────────────────────────────────────────────────────────
+ * Boot prompt template test (F8)
+ * ────────────────────────────────────────────────────────── */
+
+describe("boot-prompt template", () => {
+  it("templates/boot-prompt.txt exists", async () => {
+    await expect(
+      fs.access(path.join(TEMPLATES_ROOT, "boot-prompt.txt")),
+    ).resolves.toBeUndefined();
+  });
+
+  it("contains {{TASK_TRACKER}} placeholder", async () => {
+    const content = await fs.readFile(
+      path.join(TEMPLATES_ROOT, "boot-prompt.txt"),
+      "utf8",
+    );
+    expect(content).toContain("{{TASK_TRACKER}}");
+  });
+
+  it("contains {{PROJECT_NAME}} placeholder", async () => {
+    const content = await fs.readFile(
+      path.join(TEMPLATES_ROOT, "boot-prompt.txt"),
+      "utf8",
+    );
+    expect(content).toContain("{{PROJECT_NAME}}");
+  });
+
+  it("placeholder substitution works correctly", async () => {
+    const template = await fs.readFile(
+      path.join(TEMPLATES_ROOT, "boot-prompt.txt"),
+      "utf8",
+    );
+    const result = fillTemplate(template, {
+      PROJECT_NAME: "MyProject",
+      TASK_TRACKER: "taskmaster",
+    });
+    expect(result).toContain("MyProject");
+    expect(result).toContain("taskmaster");
+    expect(result).not.toContain("{{PROJECT_NAME}}");
+    expect(result).not.toContain("{{TASK_TRACKER}}");
   });
 });
