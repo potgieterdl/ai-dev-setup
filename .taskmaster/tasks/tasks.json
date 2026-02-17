@@ -469,8 +469,9 @@
           "3",
           "4"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-02-17T21:08:12.934Z"
       },
       {
         "id": "8",
@@ -484,8 +485,74 @@
           "4",
           "5"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create src/generators/claude-md.ts with core generator function",
+            "description": "Implement the main generateClaudeMd function and helper functions in src/generators/claude-md.ts following the pattern established by mcp-json.ts.",
+            "dependencies": [],
+            "details": "Create /workspaces/ai-dev-setup/src/generators/claude-md.ts with:\n1. Import ProjectConfig, FileDescriptor from '../types.js' and getSelectedServers from '../registry.js'\n2. Implement buildTaskTrackerInstructions(config: ProjectConfig): string with switch on config.taskTracker for 'taskmaster' (includes @./.taskmaster/CLAUDE.md import and task-master commands), 'beads' (includes beads_ready, bd sync, commit format), and 'markdown' (TASKS.md editing with [x] markers)\n3. Implement buildMcpSection(config: ProjectConfig): string that calls getSelectedServers and formats each server's claudeMcpName and description\n4. Implement exported generateClaudeMd(config: ProjectConfig): FileDescriptor[] that:\n   - Conditionally builds docImports block (if config.generateDocs) with @docs/doc_format.md, @docs/prd.md, @docs/architecture.md, @docs/testing_strategy.md, @docs/onboarding.md\n   - Conditionally builds rulesRef block (if config.generateRules) mentioning .claude/rules/ path-scoped rules\n   - Assembles CLAUDE.md string with managed header comment, doc imports, task tracker section, MCP section, rules ref, and Quality Gate (format, lint, typecheck, build, test steps)\n   - Returns FileDescriptor array with CLAUDE.md always included\n   - Adds CLAUDE_MCP.md only when config.selectedMcps is non-empty, using getSelectedServers to build per-server docs with claudeMcpName, description, and npmPackage",
+            "status": "done",
+            "testStrategy": "Manual inspection of output for each tracker type before writing automated tests",
+            "updatedAt": "2026-02-17T21:12:39.898Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Add accurate beads tracker instructions with correct command syntax",
+            "description": "Ensure the beads task tracker branch in buildTaskTrackerInstructions contains accurate beads MCP tool names and bd CLI commands as documented in the beads MCP server entry in registry.ts.",
+            "dependencies": [
+              1
+            ],
+            "details": "Read /workspaces/ai-dev-setup/src/registry.ts to find the exact beads server description and any documented commands. Read the beads entry in MCP_REGISTRY to get claudeMcpName, description, and any tool listings. Update the 'beads' case in buildTaskTrackerInstructions to include:\n- All beads MCP tool names: beads_ready, beads_create, beads_show, beads_update, beads_close, beads_dep_add, beads_dep_tree, beads_sync\n- CLI equivalents: bd show, bd next, bd sync\n- Commit message format: bd-<hash>: <change> — <value>\n- Instruction to run bd sync before push\nAlso verify the 'taskmaster' case references @./.taskmaster/CLAUDE.md with exact @ import syntax Claude Code recognizes, and the 'markdown' case references TASKS.md with [x] completion format and demo command requirement.",
+            "status": "done",
+            "testStrategy": "Check each tracker branch output against known command documentation",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:12:46.368Z"
+          },
+          {
+            "id": 3,
+            "title": "Write unit tests in test/generators/claude-md.test.ts",
+            "description": "Create comprehensive unit tests covering all 7 required scenarios from the task specification, following the patterns in test/generators/mcp-json.test.ts.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create /workspaces/ai-dev-setup/test/generators/claude-md.test.ts:\n1. Import generateClaudeMd from '../../src/generators/claude-md.js' and defaultConfig from '../../src/defaults.js'\n2. Test 1: taskTracker 'taskmaster' → CLAUDE.md content contains '@./.taskmaster/CLAUDE.md' and 'task-master next'\n3. Test 2: taskTracker 'beads' → CLAUDE.md content contains 'beads_ready' and 'bd sync'\n4. Test 3: taskTracker 'markdown' → CLAUDE.md content contains 'TASKS.md'\n5. Test 4: generateDocs true → CLAUDE.md content contains '@docs/prd.md'\n6. Test 5: selectedMcps ['taskmaster', 'context7'] → result has 2 files, CLAUDE_MCP.md content lists both server names\n7. Test 6: selectedMcps [] → result has exactly 1 file (only CLAUDE.md, no CLAUDE_MCP.md)\n8. Test 7: CLAUDE.md always contains a Quality Gate section with 'npm run format' and 'npm run lint'\n9. Additional tests: generateRules true → content contains '.claude/rules/', generateDocs false → content does NOT contain '@docs/prd.md'\nUse defaultConfig() with spread overrides for each test case as done in mcp-json.test.ts.",
+            "status": "done",
+            "testStrategy": "Run npm test after creating the file to verify all tests pass",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:13:37.381Z"
+          },
+          {
+            "id": 4,
+            "title": "Run format, lint, typecheck, and build to verify implementation",
+            "description": "Execute the full quality gate pipeline to ensure the new generator file and test file have no errors before marking the task done.",
+            "dependencies": [
+              3
+            ],
+            "details": "Run the following commands in sequence from /workspaces/ai-dev-setup:\n1. npm run format — auto-format src/generators/claude-md.ts and test/generators/claude-md.test.ts with Prettier\n2. npm run lint — run ESLint and fix any reported errors (not just warnings)\n3. npm run typecheck — run tsc --noEmit to catch any TypeScript type errors; common issues include missing return types, wrong import paths (.js vs .ts), or ProjectConfig field mismatches\n4. npm run build — compile the project; ensure no compilation errors in the new file\nIf any step fails, fix the issue in the relevant source file and re-run from that step. Pay particular attention to: import paths using .js extension (ESM requirement), correct ProjectConfig field names matching src/types.ts, and no implicit any types.",
+            "status": "done",
+            "testStrategy": "All four commands must exit with code 0",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:14:24.350Z"
+          },
+          {
+            "id": 5,
+            "title": "Run test suite and fix any failing tests",
+            "description": "Execute npm test to run all unit tests including the new claude-md.test.ts, verify all 7+ new tests pass along with existing tests.",
+            "dependencies": [
+              4
+            ],
+            "details": "Run 'npm test' from /workspaces/ai-dev-setup and verify:\n1. All existing tests (mcp-json, utils, templates) continue to pass — no regressions\n2. All 7+ new tests in test/generators/claude-md.test.ts pass\n3. If any test fails, identify the mismatch: either fix the generator logic in src/generators/claude-md.ts or fix incorrect test assertions\nCommon failure modes to watch for:\n- Content assertion using wrong substring (check exact casing and spacing in output)\n- CLAUDE_MCP.md not being generated when selectedMcps is non-empty (check getSelectedServers return value)\n- @ import syntax not matching exactly what Claude Code expects\n- Quality Gate section missing or incomplete\nAfter all tests pass, use update_subtask to log that implementation is complete and all checks passed, then set task 8 status to done.",
+            "status": "done",
+            "testStrategy": "npm test must exit with code 0 and show all new tests as passing",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:14:24.361Z"
+          }
+        ],
+        "updatedAt": "2026-02-17T21:14:24.361Z"
       },
       {
         "id": "9",
@@ -775,9 +842,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T20:56:37.998Z",
+      "lastModified": "2026-02-17T21:14:24.361Z",
       "taskCount": 23,
-      "completedCount": 7,
+      "completedCount": 9,
       "tags": [
         "master"
       ]
