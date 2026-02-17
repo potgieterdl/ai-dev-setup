@@ -565,8 +565,73 @@
           "4",
           "5"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create src/generators/docs.ts with core template reading infrastructure",
+            "description": "Create the docs generator file with the TEMPLATES_DIR constant using import.meta.url and the private readTemplate helper function. Set up the module structure and imports.",
+            "dependencies": [],
+            "details": "Create `/workspaces/ai-dev-setup/src/generators/docs.ts` with the following structure:\n\n1. Import `fs` from `node:fs/promises`, `path` from `node:path`, `ProjectConfig` and `FileDescriptor` from `../types.js`, and `fillTemplate` from `../utils.js`.\n2. Define `TEMPLATES_DIR` as `new URL('../../templates/docs', import.meta.url).pathname` — this resolves to the `templates/docs/` directory relative to the compiled output.\n3. Implement `async function readTemplate(name: string): Promise<string>` that calls `fs.readFile(path.join(TEMPLATES_DIR, name), 'utf8')`.\n4. Export an empty stub `generateDocs` function returning `Promise<FileDescriptor[]>` for now.\n\nVerify `package.json` already has `\"type\": \"module\"` and that the TypeScript config emits ESM (check `tsconfig.json` for `\"module\": \"NodeNext\"` or similar). The templates already exist at `templates/docs/` with these files: `doc_format.md`, `prd.md`, `architecture.md`, `cuj.md`, `testing_strategy.md`, `onboarding.md`, `api.md`, `adr_template.md`, `tasks_simple.md`.",
+            "status": "done",
+            "testStrategy": "Manually verify the file compiles with `npx tsc --noEmit`. Confirm `TEMPLATES_DIR` resolves to the correct absolute path by checking the URL construction logic.",
+            "updatedAt": "2026-02-17T21:18:55.429Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement core docs generation loop in generateDocs",
+            "description": "Implement the main generateDocs export function: build the vars record from ProjectConfig, iterate over the six core doc templates, read each, apply fillTemplate, and return FileDescriptor[].",
+            "dependencies": [
+              1
+            ],
+            "details": "Fill in the `generateDocs(config: ProjectConfig): Promise<FileDescriptor[]>` function body:\n\n1. Build the vars record:\n```typescript\nconst vars: Record<string, string> = {\n  PROJECT_NAME: config.projectName,\n  ARCHITECTURE: config.architecture,\n  YEAR: new Date().getFullYear().toString(),\n  TASK_TRACKER: config.taskTracker,\n};\n```\n2. Define the six core docs array:\n```typescript\nconst coreDocs = [\n  { template: 'doc_format.md', output: 'docs/doc_format.md' },\n  { template: 'prd.md', output: 'docs/prd.md' },\n  { template: 'architecture.md', output: 'docs/architecture.md' },\n  { template: 'cuj.md', output: 'docs/cuj.md' },\n  { template: 'testing_strategy.md', output: 'docs/testing_strategy.md' },\n  { template: 'onboarding.md', output: 'docs/onboarding.md' },\n];\n```\n3. Loop over coreDocs: for each, call `readTemplate(template)`, then `fillTemplate(content, vars)`, then push `{ path: output, content }` to the files array.\n4. Return the files array (without optional entries — those come next).\n\nNote: `fillTemplate` replaces `{{PLACEHOLDER}}` markers. Inspect `templates/docs/prd.md` and others to confirm which placeholder variables they use, and ensure all are covered by the vars record.",
+            "status": "done",
+            "testStrategy": "Write a quick smoke test: call generateDocs with a minimal ProjectConfig and assert the result contains exactly 6 FileDescriptors with paths starting with 'docs/'.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:20:02.233Z"
+          },
+          {
+            "id": 3,
+            "title": "Add conditional API docs, ADR template, and markdown task tracker entries",
+            "description": "Extend generateDocs to conditionally push docs/api.md when hasApiDocs is true, always push the ADR template to docs/adr/adr_template.md, and push TASKS.md when taskTracker is 'markdown'.",
+            "dependencies": [
+              2
+            ],
+            "details": "After the core docs loop, add three conditional blocks:\n\n1. **API docs** (conditional on `config.hasApiDocs`):\n```typescript\nif (config.hasApiDocs) {\n  const content = await readTemplate('api.md');\n  files.push({ path: 'docs/api.md', content: fillTemplate(content, vars) });\n}\n```\n\n2. **ADR template** (always included — gives a starting template for Architecture Decision Records):\n```typescript\nconst adrTemplate = await readTemplate('adr_template.md');\nfiles.push({\n  path: 'docs/adr/adr_template.md',\n  content: fillTemplate(adrTemplate, { ...vars, NUMBER: 'NNN', TITLE: 'Decision Title' }),\n});\n```\nNote: `adr_template.md` contains `{{NUMBER}}` and `{{TITLE}}` placeholders in addition to standard vars — these must be merged into the vars record for the fillTemplate call.\n\n3. **Markdown task tracker** (conditional on `config.taskTracker === 'markdown'`):\n```typescript\nif (config.taskTracker === 'markdown') {\n  const content = await readTemplate('tasks_simple.md');\n  files.push({ path: 'TASKS.md', content: fillTemplate(content, vars) });\n}\n```\n\n`tasks_simple.md` uses `{{PROJECT_NAME}}` which is already in vars.",
+            "status": "done",
+            "testStrategy": "Test the three conditional branches: (1) hasApiDocs=false → no api.md; (2) hasApiDocs=true → api.md present; (3) taskTracker='markdown' → TASKS.md present; (4) adr_template.md always present with 'NNN' placeholder resolved.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:20:02.241Z"
+          },
+          {
+            "id": 4,
+            "title": "Create test/generators/docs.test.ts with full unit test suite",
+            "description": "Create the unit test file for the docs generator, covering all documented test cases: core docs presence, API docs conditionality, ADR template, and markdown task tracker file.",
+            "dependencies": [
+              3
+            ],
+            "details": "Create `/workspaces/ai-dev-setup/test/generators/docs.test.ts` following the same pattern as `test/generators/claude-md.test.ts`:\n\n```typescript\nimport { describe, it, expect } from 'vitest';\nimport { generateDocs } from '../../src/generators/docs.js';\nimport { defaultConfig } from '../../src/defaults.js';\nimport type { ProjectConfig } from '../../src/types.js';\n\nfunction makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {\n  return { ...defaultConfig('/tmp/test-project'), ...overrides };\n}\n\ndescribe('generateDocs', () => {\n  it('returns core 6 docs when generateDocs=true, hasApiDocs=false', async () => {\n    const result = await generateDocs(makeConfig({ generateDocs: true, hasApiDocs: false }));\n    const paths = result.map(f => f.path);\n    expect(paths).toContain('docs/doc_format.md');\n    expect(paths).toContain('docs/prd.md');\n    expect(paths).toContain('docs/architecture.md');\n    expect(paths).not.toContain('docs/api.md');\n  });\n\n  it('includes docs/api.md when hasApiDocs=true', async () => {\n    const result = await generateDocs(makeConfig({ hasApiDocs: true }));\n    expect(result.map(f => f.path)).toContain('docs/api.md');\n  });\n\n  it('always includes docs/adr/adr_template.md', async () => {\n    const result = await generateDocs(makeConfig());\n    expect(result.map(f => f.path)).toContain('docs/adr/adr_template.md');\n  });\n\n  it('includes TASKS.md when taskTracker is markdown', async () => {\n    const result = await generateDocs(makeConfig({ taskTracker: 'markdown' }));\n    expect(result.map(f => f.path)).toContain('TASKS.md');\n  });\n\n  it('does NOT include TASKS.md when taskTracker is not markdown', async () => {\n    const result = await generateDocs(makeConfig({ taskTracker: 'taskmaster' }));\n    expect(result.map(f => f.path)).not.toContain('TASKS.md');\n  });\n\n  it('applies PROJECT_NAME substitution in template content', async () => {\n    const result = await generateDocs(makeConfig({ projectName: 'my-cool-app' }));\n    const tasksFile = result.find(f => f.path === 'TASKS.md');\n    // tasks_simple.md uses {{PROJECT_NAME}}\n    // This test only runs if taskTracker='markdown'; adjust makeConfig accordingly\n  });\n});\n```\n\nAlso verify the test works with the actual template files on disk (no mocking needed since it's a unit test that reads real files).",
+            "status": "done",
+            "testStrategy": "Run `npm test -- test/generators/docs.test.ts` and confirm all tests pass. Verify real template files are read from disk without errors.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:20:02.246Z"
+          },
+          {
+            "id": 5,
+            "title": "Run quality gate checks and fix any issues",
+            "description": "Run format, lint, type-check, build, and full test suite. Fix any failures before marking the task done.",
+            "dependencies": [
+              4
+            ],
+            "details": "Execute the full quality gate sequence as required by project standards:\n\n1. `npm run format` — run Prettier to format all files\n2. `npm run lint` — run ESLint and fix all errors\n3. `npm run typecheck` — run `tsc --noEmit` and fix any type errors\n4. `npm run build` — compile TypeScript to the output directory and verify zero errors\n5. `npm test` — run the full Vitest suite including the new `test/generators/docs.test.ts`\n\nCommon issues to watch for:\n- ESM import paths must use `.js` extension (e.g., `from '../types.js'`)\n- `import.meta.url` requires the file to be compiled as ESM; verify tsconfig `module` and `moduleResolution` settings\n- Template file path resolution: in tests, the TEMPLATES_DIR will be computed relative to the compiled JS output location, so verify dist/ output structure has access to templates/ (may require tsconfig `include` or npm `files` config to copy templates)\n- If templates are not copied to dist/, the test will fail with ENOENT — in that case, add a build step to copy templates or use a path relative to the project root\n\nLog results using `update_subtask` and set status to done only after all checks pass.",
+            "status": "done",
+            "testStrategy": "All 5 quality gate steps must exit with code 0. The full test suite must pass with no failures. Zero TypeScript errors. Zero ESLint errors.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:20:02.254Z"
+          }
+        ],
+        "updatedAt": "2026-02-17T21:20:02.254Z"
       },
       {
         "id": "10",
@@ -842,9 +907,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T21:14:24.361Z",
+      "lastModified": "2026-02-17T21:20:02.254Z",
       "taskCount": 23,
-      "completedCount": 9,
+      "completedCount": 10,
       "tags": [
         "master"
       ]
