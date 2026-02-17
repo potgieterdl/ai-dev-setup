@@ -7,12 +7,7 @@
 export type TaskTracker = "taskmaster" | "beads" | "markdown";
 
 /** Architecture tier selection from wizard Step 4 */
-export type Architecture =
-  | "monolith"
-  | "2-tier"
-  | "3-tier"
-  | "microservices"
-  | "skip";
+export type Architecture = "monolith" | "2-tier" | "3-tier" | "microservices" | "skip";
 
 /** MCP server definition from the registry */
 export interface McpServer {

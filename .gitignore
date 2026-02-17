@@ -24,6 +24,10 @@ node_modules/
 # Build output
 dist/
 *.tsbuildinfo
+*.js.map
+
+# AI init audit artifact (F11)
+.ai-init-audit.md
 
 # OS specific
 .DS_Store

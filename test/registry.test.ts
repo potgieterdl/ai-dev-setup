@@ -1,8 +1,4 @@
-import {
-  MCP_REGISTRY,
-  getMcpByName,
-  getSelectedServers,
-} from "../src/registry.js";
+import { MCP_REGISTRY, getMcpByName, getSelectedServers } from "../src/registry.js";
 
 describe("MCP_REGISTRY", () => {
   it("contains exactly 5 server entries", () => {
@@ -11,13 +7,7 @@ describe("MCP_REGISTRY", () => {
 
   it("includes all expected server names", () => {
     const names = MCP_REGISTRY.map((s) => s.name);
-    expect(names).toEqual([
-      "taskmaster",
-      "beads",
-      "context7",
-      "browsermcp",
-      "sequential-thinking",
-    ]);
+    expect(names).toEqual(["taskmaster", "beads", "context7", "browsermcp", "sequential-thinking"]);
   });
 
   it("beads entry has correct npmPackage and claudeMcpName", () => {

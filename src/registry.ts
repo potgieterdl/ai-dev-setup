@@ -24,8 +24,7 @@ export const MCP_REGISTRY: McpServer[] = [
   },
   {
     name: "beads",
-    description:
-      "Beads — distributed git-backed issue tracking for multi-agent workflows",
+    description: "Beads — distributed git-backed issue tracking for multi-agent workflows",
     npmPackage: "beads-mcp",
     claudeMcpName: "beads",
     required: false,
@@ -43,8 +42,7 @@ export const MCP_REGISTRY: McpServer[] = [
   },
   {
     name: "browsermcp",
-    description:
-      "BrowserMCP — browser automation for testing (navigate, click, screenshots)",
+    description: "BrowserMCP — browser automation for testing (navigate, click, screenshots)",
     npmPackage: "@anthropic-ai/mcp-server-puppeteer",
     claudeMcpName: "browsermcp",
     required: false,
@@ -53,8 +51,7 @@ export const MCP_REGISTRY: McpServer[] = [
   },
   {
     name: "sequential-thinking",
-    description:
-      "Sequential Thinking — dynamic problem-solving through thought sequences",
+    description: "Sequential Thinking — dynamic problem-solving through thought sequences",
     npmPackage: "@anthropic-ai/mcp-server-sequential-thinking",
     claudeMcpName: "sequential-thinking",
     required: false,

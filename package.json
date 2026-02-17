@@ -11,22 +11,24 @@
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint --no-error-on-unmatched-pattern 'src/**/*.ts' 'test/**/*.ts'",
+    "lint": "eslint --fix src/ test/",
+    "lint:check": "eslint src/ test/",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
-    "meow": "latest",
-    "@inquirer/prompts": "latest"
+    "@inquirer/prompts": "latest",
+    "meow": "latest"
   },
   "devDependencies": {
-    "typescript": "latest",
-    "vitest": "latest",
-    "tsx": "latest",
     "@types/node": "latest",
     "eslint": "latest",
-    "@typescript-eslint/eslint-plugin": "latest",
-    "@typescript-eslint/parser": "latest",
-    "prettier": "latest"
+    "eslint-config-prettier": "latest",
+    "prettier": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "typescript-eslint": "latest",
+    "vitest": "latest"
   }
 }

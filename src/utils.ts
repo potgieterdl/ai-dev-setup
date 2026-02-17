@@ -14,7 +14,7 @@ const execFileAsync = promisify(execFile);
 export async function writeFiles(
   files: FileDescriptor[],
   root: string,
-  overwrite = true,
+  overwrite = true
 ): Promise<string[]> {
   const written: string[] = [];
   for (const file of files) {
@@ -40,11 +40,7 @@ export async function writeFiles(
 /**
  * Run a shell command and return stdout. Throws on non-zero exit.
  */
-export async function run(
-  cmd: string,
-  args: string[],
-  cwd?: string,
-): Promise<string> {
+export async function run(cmd: string, args: string[], cwd?: string): Promise<string> {
   const { stdout } = await execFileAsync(cmd, args, { cwd });
   return stdout.trim();
 }
@@ -65,14 +61,8 @@ export async function commandExists(cmd: string): Promise<boolean> {
  * Replace {{PLACEHOLDER}} markers in a template string.
  * Unmatched placeholders are left as-is.
  */
-export function fillTemplate(
-  template: string,
-  vars: Record<string, string>,
-): string {
-  return template.replace(
-    /\{\{(\w+)\}\}/g,
-    (match, key: string) => vars[key] ?? match,
-  );
+export function fillTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (match, key: string) => vars[key] ?? match);
 }
 
 /**

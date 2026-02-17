@@ -2,12 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
-import {
-  writeFiles,
-  fillTemplate,
-  commandExists,
-  readOptional,
-} from "../../src/utils.js";
+import { writeFiles, fillTemplate, commandExists, readOptional } from "../../src/utils.js";
 import type { FileDescriptor } from "../../src/types.js";
 
 describe("writeFiles", () => {
@@ -22,9 +17,7 @@ describe("writeFiles", () => {
   });
 
   it("creates files in the root directory", async () => {
-    const files: FileDescriptor[] = [
-      { path: "hello.txt", content: "Hello, world!" },
-    ];
+    const files: FileDescriptor[] = [{ path: "hello.txt", content: "Hello, world!" }];
     const written = await writeFiles(files, tmpDir);
     expect(written).toEqual(["hello.txt"]);
 
@@ -39,10 +32,7 @@ describe("writeFiles", () => {
     const written = await writeFiles(files, tmpDir);
     expect(written).toEqual(["deep/nested/dir/file.txt"]);
 
-    const content = await fs.readFile(
-      path.join(tmpDir, "deep/nested/dir/file.txt"),
-      "utf8",
-    );
+    const content = await fs.readFile(path.join(tmpDir, "deep/nested/dir/file.txt"), "utf8");
     expect(content).toBe("nested content");
   });
 
@@ -63,9 +53,7 @@ describe("writeFiles", () => {
     const filePath = path.join(tmpDir, "overwrite.txt");
     await fs.writeFile(filePath, "original", "utf8");
 
-    const files: FileDescriptor[] = [
-      { path: "overwrite.txt", content: "updated" },
-    ];
+    const files: FileDescriptor[] = [{ path: "overwrite.txt", content: "updated" }];
     const written = await writeFiles(files, tmpDir);
     expect(written).toEqual(["overwrite.txt"]);
 
@@ -77,9 +65,7 @@ describe("writeFiles", () => {
     const filePath = path.join(tmpDir, "keep.txt");
     await fs.writeFile(filePath, "original", "utf8");
 
-    const files: FileDescriptor[] = [
-      { path: "keep.txt", content: "should not overwrite" },
-    ];
+    const files: FileDescriptor[] = [{ path: "keep.txt", content: "should not overwrite" }];
     const written = await writeFiles(files, tmpDir, false);
     expect(written).toEqual([]);
 
@@ -88,16 +74,11 @@ describe("writeFiles", () => {
   });
 
   it("writes new files even when overwrite is false", async () => {
-    const files: FileDescriptor[] = [
-      { path: "new-file.txt", content: "new content" },
-    ];
+    const files: FileDescriptor[] = [{ path: "new-file.txt", content: "new content" }];
     const written = await writeFiles(files, tmpDir, false);
     expect(written).toEqual(["new-file.txt"]);
 
-    const content = await fs.readFile(
-      path.join(tmpDir, "new-file.txt"),
-      "utf8",
-    );
+    const content = await fs.readFile(path.join(tmpDir, "new-file.txt"), "utf8");
     expect(content).toBe("new content");
   });
 
@@ -165,9 +146,7 @@ describe("commandExists", () => {
   });
 
   it("returns false for a command that does not exist", async () => {
-    const exists = await commandExists(
-      "this-command-definitely-does-not-exist-xyz",
-    );
+    const exists = await commandExists("this-command-definitely-does-not-exist-xyz");
     expect(exists).toBe(false);
   });
 });
