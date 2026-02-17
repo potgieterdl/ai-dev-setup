@@ -213,8 +213,9 @@
         "testStrategy": "Unit test `test/generators/utils.test.ts` using a temp directory (use `os.tmpdir()` + random suffix, clean up in afterEach): test `writeFiles` creates nested directories and files, test `fillTemplate` replaces all placeholders, test `writeFiles` with `overwrite=false` skips existing files, test `commandExists('node')` returns true.",
         "priority": "high",
         "dependencies": ["2"],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-02-17T20:25:50.805Z"
       },
       {
         "id": "5",
@@ -224,8 +225,98 @@
         "testStrategy": "Test that all template files exist via `fs.access()`. Test that `fillTemplate` correctly substitutes `{{PROJECT_NAME}}` and `{{ARCHITECTURE}}` in the architecture template. Test that prd.md template contains the 'Demo test' field placeholder. Test that no template exceeds 500 lines.",
         "priority": "high",
         "dependencies": ["4"],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create doc_format.md meta-standard template",
+            "description": "Create `templates/docs/doc_format.md` defining the documentation standard that all other templates must follow.",
+            "dependencies": [],
+            "details": "Create `/workspaces/ai-dev-setup/templates/docs/doc_format.md` with: TLDR section (1-3 sentences), TOC using `#section` anchors, rules for sections < 30 lines, preference for tables over prose, cross-references as relative links, and a max ~500 lines guideline with sub-doc splitting instructions. This file itself must follow its own standard. Remove the existing `.gitkeep` from `templates/docs/` if present after creating the first file.",
+            "status": "done",
+            "testStrategy": "Check that the file exists via `fs.access()`. Verify it contains 'TLDR', 'TOC', '500 lines', and 'tables' sections. Verify line count is under 500.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T20:31:04.441Z"
+          },
+          {
+            "id": 2,
+            "title": "Create prd.md PRD template",
+            "description": "Create `templates/docs/prd.md` containing the PRD template with Problem/Solution/Features/Phases sections and a `{{PROJECT_NAME}}` placeholder.",
+            "dependencies": [1],
+            "details": "Create `/workspaces/ai-dev-setup/templates/docs/prd.md`. Must include: a TLDR at the top, a TOC, sections for Problem, Solution, Features, and Phases. Each feature entry should have sub-fields: Business outcome, Demo test (single-command proof), and Acceptance criteria. Insert `{{PROJECT_NAME}}` placeholder in the header. Follow doc_format.md standards (sections < 30 lines, tables where applicable).",
+            "status": "done",
+            "testStrategy": "Verify file exists. Verify `{{PROJECT_NAME}}` placeholder is present. Verify 'Demo test' field appears in the features section. Verify file is under 500 lines.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T20:31:12.402Z"
+          },
+          {
+            "id": 3,
+            "title": "Create architecture.md architecture overview template",
+            "description": "Create `templates/docs/architecture.md` with TLDR, tier overview, component map, and `{{ARCHITECTURE}}` and `{{PROJECT_NAME}}` placeholders.",
+            "dependencies": [1],
+            "details": "Create `/workspaces/ai-dev-setup/templates/docs/architecture.md`. Must include: TLDR section, a tier overview that acknowledges monolith/2-tier/3-tier/microservices options (using `{{ARCHITECTURE}}` placeholder), a component map section, and links to detail docs. Insert both `{{PROJECT_NAME}}` and `{{ARCHITECTURE}}` placeholders. The `fillTemplate()` function in `src/utils.ts` will substitute these at scaffold time. Follow doc_format.md standards.",
+            "status": "done",
+            "testStrategy": "Verify file exists. Verify both `{{ARCHITECTURE}}` and `{{PROJECT_NAME}}` placeholders are present. Verify `fillTemplate()` correctly substitutes them. Verify file is under 500 lines.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T20:31:18.797Z"
+          },
+          {
+            "id": 4,
+            "title": "Create api.md and cuj.md template files",
+            "description": "Create `templates/docs/api.md` (API surface in table format with auth and error sections) and `templates/docs/cuj.md` (critical user journeys with step-by-step flows).",
+            "dependencies": [1],
+            "details": "Create `/workspaces/ai-dev-setup/templates/docs/api.md` with: TLDR, a table with columns Endpoint | Method | Description | ADR ref | Source file, an Auth section, an Error shapes section, and `{{PROJECT_NAME}}` placeholder. Create `/workspaces/ai-dev-setup/templates/docs/cuj.md` with: TLDR, instructions on step-by-step user flow documentation, and one example journey section showing the expected format. Both must follow doc_format.md standards.",
+            "status": "done",
+            "testStrategy": "Verify both files exist. Verify api.md contains the 5-column table header and `{{PROJECT_NAME}}`. Verify cuj.md contains a sample journey section with steps.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T20:31:25.134Z"
+          },
+          {
+            "id": 5,
+            "title": "Create testing_strategy.md and onboarding.md template files",
+            "description": "Create `templates/docs/testing_strategy.md` (testing philosophy with integration-first, demo-test definition, mock rules, quality gate) and `templates/docs/onboarding.md` (quick-start guide for new devs/agents).",
+            "dependencies": [1],
+            "details": "Create `/workspaces/ai-dev-setup/templates/docs/testing_strategy.md` with: TLDR, Integration-first principle section, Demo-test definition, Mock justification rules (when mocks are acceptable), and Quality gate steps listing all mandatory pre-completion checks. Create `/workspaces/ai-dev-setup/templates/docs/onboarding.md` with: TLDR, Project context paragraph, Key commands table (Command | Description), a 'Where to find things' section mapping important files/dirs, and a First steps checklist. Both follow doc_format.md standards.",
+            "status": "done",
+            "testStrategy": "Verify both files exist. Verify testing_strategy.md contains 'Integration', 'Demo', 'Mock', and 'Quality gate' sections. Verify onboarding.md contains a commands table and a file map section.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T20:31:31.274Z"
+          },
+          {
+            "id": 6,
+            "title": "Create adr_template.md ADR format template",
+            "description": "Create `templates/docs/adr_template.md` with the standard ADR structure including `{{NUMBER}}` and `{{TITLE}}` placeholders.",
+            "dependencies": [1],
+            "details": "Create `/workspaces/ai-dev-setup/templates/docs/adr_template.md` with exactly the structure: `# ADR-{{NUMBER}}: {{TITLE}}`, followed by fields: **Status:** Proposed, **Context:** (why decision was needed), **Decision:** (what was decided), **Consequences:** (trade-offs accepted). Keep the template concise — it is a reusable scaffold for individual ADR documents. Follow doc_format.md layout conventions.",
+            "status": "done",
+            "testStrategy": "Verify file exists. Verify `{{NUMBER}}` and `{{TITLE}}` placeholders are present. Verify all four required fields (Status, Context, Decision, Consequences) appear.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T20:31:37.422Z"
+          },
+          {
+            "id": 7,
+            "title": "Create tasks_simple.md simple task tracker template",
+            "description": "Create `templates/docs/tasks_simple.md` providing a markdown-based task tracker with a summary table and individual task sections.",
+            "dependencies": [1],
+            "details": "Create `/workspaces/ai-dev-setup/templates/docs/tasks_simple.md` with exactly the structure: `# Task Tracker` heading, a `## Summary` section containing a table with columns # | Task | Status | Depends, and a `## Tasks` section with a `### Task 1: Example task` entry showing fields Status, Depends on, Success criteria, and Demo command. The Status column uses `[ ]` / `[x]` checkbox notation. Follow doc_format.md standards.",
+            "status": "done",
+            "testStrategy": "Verify file exists. Verify summary table with correct columns is present. Verify task entry contains 'Demo command' field. Verify `[ ]` checkbox notation is used.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T20:31:43.428Z"
+          },
+          {
+            "id": 8,
+            "title": "Write tests verifying all template files exist and meet constraints",
+            "description": "Add a Vitest test file `test/templates.test.ts` that verifies all 9 template files exist, contain required placeholders, and none exceed 500 lines.",
+            "dependencies": [1, 2, 3, 4, 5, 6, 7],
+            "details": "Create `/workspaces/ai-dev-setup/test/templates.test.ts`. Tests must: (1) use `fs.access()` to verify each of the 9 template files in `templates/docs/` exists; (2) read each file and assert line count <= 500; (3) assert prd.md contains 'Demo test'; (4) assert architecture.md contains `{{ARCHITECTURE}}` and `{{PROJECT_NAME}}`; (5) import `fillTemplate` from `src/utils.ts` and verify it substitutes `{{PROJECT_NAME}}` and `{{ARCHITECTURE}}` correctly using architecture.md content; (6) assert adr_template.md contains `{{NUMBER}}` and `{{TITLE}}`. Run `npm run format && npm run lint && npm run typecheck && npm run build && npm test` to pass quality gate before marking done.",
+            "status": "done",
+            "testStrategy": "Run `npm test` — all assertions in `test/templates.test.ts` must pass with zero failures. Run `npm run typecheck` to confirm no TypeScript errors.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T20:32:45.636Z"
+          }
+        ],
+        "updatedAt": "2026-02-17T20:32:45.636Z"
       },
       {
         "id": "6",
@@ -428,9 +519,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T19:54:53.872Z",
+      "lastModified": "2026-02-17T20:32:45.637Z",
       "taskCount": 23,
-      "completedCount": 3,
+      "completedCount": 5,
       "tags": ["master"]
     }
   }
