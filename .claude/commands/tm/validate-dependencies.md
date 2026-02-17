@@ -36,6 +36,7 @@ task-master validate-dependencies
 ## Smart Analysis
 
 The validation provides:
+
 - Visual dependency graph
 - Critical path analysis
 - Bottleneck identification
@@ -59,6 +60,7 @@ Critical Path: #1 → #5 → #23 → #45 → #50 (15 days)
 ## Actionable Output
 
 For each issue found:
+
 - Clear description
 - Impact assessment
 - Suggested fix
@@ -67,6 +69,7 @@ For each issue found:
 ## Next Steps
 
 After validation:
+
 - Run `/taskmaster:fix-dependencies` to auto-fix
 - Manually adjust problematic dependencies
 - Rerun to verify fixes

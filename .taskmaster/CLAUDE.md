@@ -46,6 +46,7 @@ task-master generate                                         # Update task markd
 - `.env` - API keys for CLI usage
 
 **PRD File Format:** While both `.txt` and `.md` extensions work, **`.md` is recommended** because:
+
 - Markdown syntax highlighting in editors improves readability
 - Proper rendering when previewing in VS Code, GitHub, or other tools
 - Better collaboration through formatted documentation
@@ -112,11 +113,11 @@ Task Master provides an MCP server that Claude Code can connect to. Configure in
 
 Default: `core` (7 tools). Set via `TASK_MASTER_TOOLS` env var.
 
-| Tier | Count | Tools |
-|------|-------|-------|
-| `core` | 7 | `get_tasks`, `next_task`, `get_task`, `set_task_status`, `update_subtask`, `parse_prd`, `expand_task` |
-| `standard` | 14 | core + `initialize_project`, `analyze_project_complexity`, `expand_all`, `add_subtask`, `remove_task`, `add_task`, `complexity_report` |
-| `all` | 44+ | standard + dependencies, tags, research, autopilot, scoping, models, rules |
+| Tier       | Count | Tools                                                                                                                                  |
+| ---------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `core`     | 7     | `get_tasks`, `next_task`, `get_task`, `set_task_status`, `update_subtask`, `parse_prd`, `expand_task`                                  |
+| `standard` | 14    | core + `initialize_project`, `analyze_project_complexity`, `expand_all`, `add_subtask`, `remove_task`, `add_task`, `complexity_report` |
+| `all`      | 44+   | standard + dependencies, tags, research, autopilot, scoping, models, rules                                                             |
 
 **Upgrade when tool unavailable:** Edit MCP config, change `TASK_MASTER_TOOLS` from `"core"` to `"standard"` or `"all"`, restart MCP.
 

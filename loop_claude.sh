@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MAX_LOOPS=1
+MAX_LOOPS=2
 LOOP=0
 
 while [ "$LOOP" -lt "$MAX_LOOPS" ]; do

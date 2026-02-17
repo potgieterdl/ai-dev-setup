@@ -12,6 +12,7 @@ Based on your input, I'll help you discover capabilities:
 ### 1. **What are you trying to do?**
 
 If $ARGUMENTS contains:
+
 - "start" / "begin" → Show project initialization workflows
 - "manage" / "organize" → Show task management commands
 - "automate" / "auto" → Show automation workflows
@@ -24,6 +25,7 @@ If $ARGUMENTS contains:
 Based on your project state:
 
 **No tasks yet?**
+
 ```
 You'll want to start with:
 1. /project:task-master:init <prd-file>
@@ -37,6 +39,7 @@ Try: /project:task-master:init demo-prd.md
 
 **Have tasks?**
 Let me analyze what you might need...
+
 - Many pending tasks? → Learn sprint planning
 - Complex tasks? → Learn task expansion
 - Daily work? → Learn workflow automation
@@ -44,12 +47,14 @@ Let me analyze what you might need...
 ### 3. **Command Discovery**
 
 **By Category:**
+
 - 📋 Task Management: list, show, add, update, complete
 - 🔄 Workflows: auto-implement, sprint-plan, daily-standup
 - 🛠️ Utilities: check-health, complexity-report, sync-memory
 - 🔍 Analysis: validate-deps, show dependencies
 
 **By Scenario:**
+
 - "I want to see what to work on" → `/project:task-master:next`
 - "I need to break this down" → `/project:task-master:expand <id>`
 - "Show me everything" → `/project:task-master:status`
@@ -58,6 +63,7 @@ Let me analyze what you might need...
 ### 4. **Power User Patterns**
 
 **Command Chaining:**
+
 ```
 /project:task-master:next
 /project:task-master:start <id>
@@ -65,6 +71,7 @@ Let me analyze what you might need...
 ```
 
 **Smart Filters:**
+
 ```
 /project:task-master:list pending high
 /project:task-master:list blocked
@@ -72,6 +79,7 @@ Let me analyze what you might need...
 ```
 
 **Automation:**
+
 ```
 /project:workflows:pipeline init → expand-all → sprint-plan
 ```
@@ -81,18 +89,21 @@ Let me analyze what you might need...
 Based on your experience level:
 
 **Beginner Path:**
+
 1. init → Create project
 2. status → Understand state
 3. next → Find work
 4. complete → Finish task
 
 **Intermediate Path:**
+
 1. expand → Break down complex tasks
 2. sprint-plan → Organize work
 3. complexity-report → Understand difficulty
 4. validate-deps → Ensure consistency
 
 **Advanced Path:**
+
 1. pipeline → Chain operations
 2. smart-flow → Context-aware automation
 3. Custom commands → Extend the system

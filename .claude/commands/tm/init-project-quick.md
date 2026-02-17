@@ -31,12 +31,15 @@ task-master init -y
 ## Next Steps
 
 After quick init:
+
 1. Configure AI models if needed:
+
    ```
    /taskmaster:models/setup
    ```
 
 2. Parse PRD if available:
+
    ```
    /taskmaster:parse-prd <file>
    ```

@@ -14,6 +14,7 @@ task-master expand --all
 ## Smart Selection
 
 Only expands tasks that:
+
 - Are marked as pending
 - Have high complexity (>5)
 - Lack existing subtasks
@@ -46,6 +47,7 @@ Only expands tasks that:
 ## Results
 
 After bulk expansion:
+
 - Summary of tasks expanded
 - New subtask count
 - Updated complexity metrics

@@ -38,6 +38,7 @@ task-master parse-prd --input=$ARGUMENTS --research
 ## Enhanced Output
 
 Research mode typically:
+
 - Generates more detailed tasks
 - Includes industry standards
 - Adds compliance considerations

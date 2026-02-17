@@ -48,10 +48,7 @@
 
   "customizations": {
     "vscode": {
-      "extensions": [
-        "github.copilot",
-        "github.copilot-chat"
-      ],
+      "extensions": ["github.copilot", "github.copilot-chat"],
       "settings": {
         "editor.formatOnSave": true,
         "chat.mcp.discovery.enabled": {

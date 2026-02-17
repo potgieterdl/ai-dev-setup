@@ -4,6 +4,7 @@ Arguments: $ARGUMENTS
 List tasks with intelligent argument parsing.
 
 Parse arguments to determine filters and display options:
+
 - Status: pending, in-progress, done, review, deferred, cancelled
 - Priority: high, medium, low (or priority:high)
 - Special: subtasks, tree, dependencies, blocked

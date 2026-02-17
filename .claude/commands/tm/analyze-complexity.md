@@ -26,7 +26,9 @@ task-master analyze-complexity [--research] [--threshold=5]
 ## Analysis Process
 
 ### 1. **Task Evaluation**
+
 For each task, AI evaluates:
+
 - Technical complexity
 - Time requirements
 - Dependency complexity
@@ -34,7 +36,9 @@ For each task, AI evaluates:
 - Knowledge requirements
 
 ### 2. **Complexity Scoring**
+
 Assigns score 1-10 based on:
+
 - Implementation difficulty
 - Integration challenges
 - Testing requirements
@@ -42,7 +46,9 @@ Assigns score 1-10 based on:
 - Technical debt risk
 
 ### 3. **Recommendations**
+
 For complex tasks:
+
 - Suggest expansion approach
 - Recommend subtask breakdown
 - Identify risk areas
@@ -101,6 +107,7 @@ Summary:
 ## Actionable Output
 
 For each high-complexity task:
+
 1. Complexity score with reasoning
 2. Specific expansion suggestions
 3. Risk mitigation approaches
@@ -109,6 +116,7 @@ For each high-complexity task:
 ## Integration
 
 Results are:
+
 - Saved to `.taskmaster/reports/complexity-analysis.md`
 - Used by expand command
 - Inform sprint planning
@@ -117,6 +125,7 @@ Results are:
 ## Next Steps
 
 After analysis:
+
 ```
 /taskmaster:expand 5    # Expand specific task
 /taskmaster:expand-all  # Expand all recommended

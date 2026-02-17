@@ -38,32 +38,34 @@ Starting an AI-assisted coding project (Claude Code, Gemini CLI, Copilot) requir
 
 **AI Project Init** is a single-entry-point bootstrap tool that turns an empty workspace into an agent-ready development environment. It installs AI tooling, scaffolds agent-optimized documentation templates, configures MCP servers, generates the full `.claude/` directory structure (rules, skills, hooks, commands), sets up a task tracker, and establishes git and testing conventions. After this tool runs, an AI agent can immediately begin productive, context-aware work.
 
-**Key principle:** This tool handles *setup and scaffolding only*. It exits after configuration. Other tools (Claude Code, Task Master, Beads) take over for the actual development cycle.
+**Key principle:** This tool handles _setup and scaffolding only_. It exits after configuration. Other tools (Claude Code, Task Master, Beads) take over for the actual development cycle.
 
 ## 3. Scope Boundary
 
-| In scope | Out of scope |
-|---|---|
-| Tool installation (Claude Code, Task Master, Beads) | Being a task tracker or IDE |
-| Claude Code headless audit of generated scaffolding | Running or orchestrating AI agents |
-| MCP server registration & config | Writing actual project code |
-| Document template scaffolding | CI/CD pipeline creation or management |
-| Full `.claude/` generation (rules, skills, hooks, commands) | Multi-repo orchestration |
-| TypeScript CLI with single-line install | Being a full framework (oclif, yeoman) |
-| Devcontainer.json generation | Template library for specific frameworks |
-| Git workflow guidance + pre-commit hooks | AI-driven PRD generation (review only — see F11) |
-| Testing strategy guidance & rules | Hosting, deployment, or infrastructure |
-| Agent teams opt-in configuration | Running agent teams (that's Claude Code) |
-| Guided PRD iteration (template-driven) | |
+| In scope                                                    | Out of scope                                     |
+| ----------------------------------------------------------- | ------------------------------------------------ |
+| Tool installation (Claude Code, Task Master, Beads)         | Being a task tracker or IDE                      |
+| Claude Code headless audit of generated scaffolding         | Running or orchestrating AI agents               |
+| MCP server registration & config                            | Writing actual project code                      |
+| Document template scaffolding                               | CI/CD pipeline creation or management            |
+| Full `.claude/` generation (rules, skills, hooks, commands) | Multi-repo orchestration                         |
+| TypeScript CLI with single-line install                     | Being a full framework (oclif, yeoman)           |
+| Devcontainer.json generation                                | Template library for specific frameworks         |
+| Git workflow guidance + pre-commit hooks                    | AI-driven PRD generation (review only — see F11) |
+| Testing strategy guidance & rules                           | Hosting, deployment, or infrastructure           |
+| Agent teams opt-in configuration                            | Running agent teams (that's Claude Code)         |
+| Guided PRD iteration (template-driven)                      |                                                  |
 
 ## 4. User Personas
 
 **Primary: Solo developer starting a new AI-assisted project**
+
 - Has an idea or rough PRD, wants to go from zero to "Claude, build this" fast
 - May be in GitHub Codespaces or local dev
 - Comfortable with terminal, may not know Claude Code/MCP best practices
 
 **Secondary: Team lead setting up a shared AI dev environment**
+
 - Wants consistent agent instructions across team members
 - Uses devcontainer for reproducibility
 - Needs docs structured so any agent (not just Claude) can consume them
@@ -77,11 +79,13 @@ Starting an AI-assisted coding project (Claude Code, Gemini CLI, Copilot) requir
 **Why:** Bash is hard to test, hard to refactor, and gets brittle at scale. TypeScript gives us type safety, pure-function generators that are trivially testable, and access to the Node ecosystem for prompts and argument parsing — while staying simple (no framework, no plugin system).
 
 **Install (Linux):**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/potgieterdl/ai-helper-tools/main/install.sh | bash
 ```
 
 **What `install.sh` does:**
+
 1. Check for Node.js ≥ 20 — if missing, install via [fnm](https://fnm.vercel.app/) (fast, single-binary Node version manager)
 2. Clone/pull the repo to `~/.ai-helper-tools` (or `$AI_HELPER_HOME`)
 3. Run `npm ci` (dependencies are checked in via lockfile)
@@ -89,6 +93,7 @@ curl -fsSL https://raw.githubusercontent.com/potgieterdl/ai-helper-tools/main/in
 5. Print: `Run 'ai-init' in any project directory to get started`
 
 **Usage after install:**
+
 ```bash
 cd my-project
 ai-init                    # Interactive wizard
@@ -99,6 +104,7 @@ ai-init post-start         # Codespace lifecycle: per-session setup
 ```
 
 **Source structure:**
+
 ```
 src/
 ├── cli.ts                # Entry point + arg parsing (meow)
@@ -120,18 +126,27 @@ src/
 ```
 
 **Key design choice — generators are pure functions:**
+
 ```typescript
 // generators/mcp-json.ts
 export function generateMcpJson(config: ProjectConfig): FileDescriptor[] {
   return [
-    { path: '.mcp.json', content: JSON.stringify(buildMcpConfig(config), null, 2) },
-    { path: '.vscode/mcp.json', content: JSON.stringify(buildVscodeMcpConfig(config), null, 2) },
+    {
+      path: ".mcp.json",
+      content: JSON.stringify(buildMcpConfig(config), null, 2),
+    },
+    {
+      path: ".vscode/mcp.json",
+      content: JSON.stringify(buildVscodeMcpConfig(config), null, 2),
+    },
   ];
 }
 ```
+
 Generators take config in, return `{ path, content }[]` out. They never touch the filesystem directly. A single `writeFiles()` utility handles all I/O. This makes every generator trivially testable — no temp dirs, no mocks, just assert on the returned content.
 
 **Self-testing (dogfooding):**
+
 ```
 test/
 ├── generators/           # Unit tests — pure function in/out
@@ -142,6 +157,7 @@ test/
 │   └── wizard.test.ts    # Uses @inquirer/testing for prompt automation
 └── fixtures/             # Cleanup: tests create temp dirs, tear them down
 ```
+
 Tests use `vitest`. Integration tests run the full CLI against a temporary project directory, verify the generated files exist and have correct content, then clean up. The test suite itself demonstrates the integration-first testing philosophy from F9 — the tool dogfoods its own testing guidance.
 
 **Non-interactive mode:** Same env vars as before (`SETUP_AI_MCPS`, `SETUP_AI_TRACKER`, `SETUP_AI_NONINTERACTIVE`) — the wizard reads them and skips prompts when set.
@@ -163,6 +179,7 @@ Tests use `vitest`. Integration tests run the full CLI against a temporary proje
 | `docs/adr/` | Architecture Decision Records — numbered (`001-use-jwt-auth.md`) with status, context, decision, consequences |
 
 **Doc format standard (`doc_format.md`):**
+
 - Every doc starts with a TOC linking to `#section` anchors
 - Sections are short (aim for <30 lines each) — agents struggle with long unstructured text
 - Tables preferred over prose for structured data (APIs, config, mappings)
@@ -172,13 +189,16 @@ Tests use `vitest`. Integration tests run the full CLI against a temporary proje
 - Max ~500 lines per doc; split into linked sub-docs if larger
 
 **ADR format (`docs/adr/NNN-title.md`):**
+
 ```markdown
 # ADR-001: Use JWT for Authentication
+
 - **Status:** Accepted | Superseded | Deprecated
 - **Context:** Why this decision was needed
 - **Decision:** What was decided
 - **Consequences:** Trade-offs accepted
 ```
+
 Agents reference ADRs when making implementation choices — the `/dev-next` command (F8) explicitly checks `docs/adr/` before starting work.
 
 **Skip logic:** If a file already exists, the wizard asks whether to overwrite or skip.
@@ -229,7 +249,7 @@ Keyword-activated knowledge files with YAML `description:` frontmatter. Unlike r
 | `.claude/skills/commit.md` | "commit", "push", "branch" | Full commit workflow: quality gate → format → lint → type-check → build → test → commit |
 | `.claude/skills/task-workflow.md` | "next task", "pick up", "start working" | How to pick, implement, verify, and close a task using the chosen tracker |
 
-Skills complement rules: a rule fires when Claude opens a test file, but the testing *skill* fires when the user says "write tests for auth" even if no test file is open yet. Together they ensure Claude always has the right knowledge loaded.
+Skills complement rules: a rule fires when Claude opens a test file, but the testing _skill_ fires when the user says "write tests for auth" even if no test file is open yet. Together they ensure Claude always has the right knowledge loaded.
 
 #### Hooks (`.claude/hooks/`)
 
@@ -238,6 +258,7 @@ Event-driven scripts that enforce quality gates automatically. Hooks fire on Cla
 **Generated hook: pre-commit quality gate**
 
 Configured in `.claude/settings.json`:
+
 ```json
 {
   "hooks": {
@@ -252,6 +273,7 @@ Configured in `.claude/settings.json`:
 ```
 
 **`.claude/hooks/pre-commit.sh`:**
+
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
@@ -288,26 +310,27 @@ echo "Quality gate passed."
 
 **Dual-file MCP config:** Claude Code and VS Code use different JSON schemas for MCP server registration, so both files must be generated:
 
-| Aspect | `.mcp.json` (Claude Code) | `.vscode/mcp.json` (VS Code / Copilot) |
-|---|---|---|
-| Root key | `"mcpServers"` | `"servers"` |
-| Workspace path | Not needed (uses cwd) | `"cwd": "${workspaceFolder}"` |
-| API keys | Inherited from shell environment / `.env` | `"${env:VAR_NAME}"` syntax + `"envFile": "${workspaceFolder}/.env"` |
-| Extra fields | — | `envFile`, explicit `env` block with key references |
+| Aspect         | `.mcp.json` (Claude Code)                 | `.vscode/mcp.json` (VS Code / Copilot)                              |
+| -------------- | ----------------------------------------- | ------------------------------------------------------------------- |
+| Root key       | `"mcpServers"`                            | `"servers"`                                                         |
+| Workspace path | Not needed (uses cwd)                     | `"cwd": "${workspaceFolder}"`                                       |
+| API keys       | Inherited from shell environment / `.env` | `"${env:VAR_NAME}"` syntax + `"envFile": "${workspaceFolder}/.env"` |
+| Extra fields   | —                                         | `envFile`, explicit `env` block with key references                 |
 
 Both files list the same servers with the same `npx` commands and args — only the wrapper structure differs. The generator must emit both to ensure MCP servers work regardless of whether the user opens the project in Claude Code CLI or VS Code with Copilot.
 
 **Registry additions:**
 
-| Name | Package | Purpose | Required |
-|---|---|---|---|
-| taskmaster | `task-master-ai` | Task orchestration & dependency tracking | If selected as tracker |
-| beads | `beads-mcp` | Distributed git-backed issue tracking | If selected as tracker |
-| context7 | `@upstash/context7-mcp` | Live library docs lookup | No |
-| browsermcp | `@anthropic-ai/mcp-server-puppeteer` | Browser automation/testing | No |
-| sequential-thinking | `@anthropic-ai/mcp-server-sequential-thinking` | Structured reasoning | No |
+| Name                | Package                                        | Purpose                                  | Required               |
+| ------------------- | ---------------------------------------------- | ---------------------------------------- | ---------------------- |
+| taskmaster          | `task-master-ai`                               | Task orchestration & dependency tracking | If selected as tracker |
+| beads               | `beads-mcp`                                    | Distributed git-backed issue tracking    | If selected as tracker |
+| context7            | `@upstash/context7-mcp`                        | Live library docs lookup                 | No                     |
+| browsermcp          | `@anthropic-ai/mcp-server-puppeteer`           | Browser automation/testing               | No                     |
+| sequential-thinking | `@anthropic-ai/mcp-server-sequential-thinking` | Structured reasoning                     | No                     |
 
 **beads-mcp specifics:**
+
 - Install: `npm install -g @beads/bd` + `pip install beads-mcp` (or `uv tool install beads-mcp`)
 - Init: `bd init --quiet` in project root
 - CLAUDE_MCP.md gets beads tool documentation (beads_ready, beads_create, beads_show, beads_update, beads_close, beads_dep_add, beads_dep_tree, beads_sync)
@@ -327,22 +350,28 @@ Both files list the same servers with the same `npx` commands and args — only 
 | **Simple Markdown** | Hello-world / ≤20 tasks, one-shot projects | Nothing extra — generates `TASKS.md` |
 
 **Simple Markdown format (`TASKS.md`):**
+
 ```markdown
 # Task Tracker
+
 ## Summary
-| # | Task | Status | Depends |
-|---|------|--------|---------|
-| 1 | Setup project structure | [x] | — |
-| 2 | Implement auth | [ ] | 1 |
+
+| #   | Task                    | Status | Depends |
+| --- | ----------------------- | ------ | ------- |
+| 1   | Setup project structure | [x]    | —       |
+| 2   | Implement auth          | [ ]    | 1       |
 
 ## Tasks
+
 ### Task 1: Setup project structure
+
 - **Status:** Done
 - **Depends on:** —
 - **Success:** Project runs `npm start` without errors
 - **Notes:** Created src/ structure with Express boilerplate
 
 ### Task 2: Implement auth
+
 - **Status:** Pending
 - **Depends on:** Task 1
 - **Success:** Login/logout works with JWT, tests pass
@@ -358,6 +387,7 @@ CLAUDE.md instructions differ per selection — agents must know which tool to u
 **What:** An interactive wizard (runs when `ai-init` is invoked without args) that walks the user through project setup sequentially. Each step can be skipped. Built with `@inquirer/prompts` for a clean terminal UI.
 
 **Wizard flow:**
+
 ```
 Step 0: Claude Code Bootstrap     (Install Claude Code if missing — required for audit)
 Step 1: MCP Server Selection      (existing — enhanced UI)
@@ -375,6 +405,7 @@ Step 10: Summary & Next Steps     (Print what was created, audit findings, what 
 **Step 0 — Claude Code Bootstrap:** See F11 Part 1 for full details. The wizard ensures Claude Code is installed and authenticated before proceeding. If auth fails, all steps run normally except Step 9 (audit), which is skipped with a warning.
 
 **PRD iteration:** In Step 3, if the user doesn't have a PRD:
+
 1. Present the PRD template with placeholder sections
 2. Open it in `$EDITOR` (or `code`) for editing
 3. User fills in what they can, saves, returns to wizard
@@ -383,6 +414,7 @@ Step 10: Summary & Next Steps     (Print what was created, audit findings, what 
 **Architecture picker:** Step 4 is a simple menu, not a design tool. It populates `docs/architecture.md` with the right tier labels and component stubs. The user (or their agent) fills in details later.
 
 **Non-interactive mode:** All choices can be pre-set via environment variables:
+
 ```bash
 SETUP_AI_MCPS="taskmaster,context7"
 SETUP_AI_TRACKER="taskmaster"    # taskmaster | beads | markdown
@@ -396,6 +428,7 @@ SETUP_AI_NONINTERACTIVE=1
 **What:** Generate `.claude/rules/git.md` with single-feature-at-a-time workflow rules.
 
 **Rules content:**
+
 - One feature branch at a time (no parallel feature branches for solo/small team work)
 - Branch naming: `feat/<task-id>-<short-desc>`, `fix/<task-id>-<short-desc>`
 - Commit message format: `<task-id>: <what changed> — <value added>`
@@ -403,7 +436,7 @@ SETUP_AI_NONINTERACTIVE=1
 - Before committing: hooks enforce the quality gate automatically (F3 hooks), but rule reminds agents to fix issues rather than bypass
 - Beads users: `bd sync` before push; Task Master users: `set-status --status=done` after merge
 
-**Pre-commit enforcement:** The git rule works in tandem with the pre-commit hook (F3). The rule tells the agent *what* to do; the hook *enforces* it. By the time code reaches `git push`, every commit is already verified — no broken intermediate states, no "fix lint" follow-up commits.
+**Pre-commit enforcement:** The git rule works in tandem with the pre-commit hook (F3). The rule tells the agent _what_ to do; the hook _enforces_ it. By the time code reaches `git push`, every commit is already verified — no broken intermediate states, no "fix lint" follow-up commits.
 
 **Agent teams note:** When using Claude Code agent teams (multiple parallel agents on feature branches), agents handle their own git syncing. The rules file acknowledges this and defers to the team harness.
 
@@ -414,8 +447,10 @@ SETUP_AI_NONINTERACTIVE=1
 **Commands generated:**
 
 **`/dev-next` (`.claude/commands/dev-next.md`):**
+
 ```markdown
 Refer to the project documentation relevant to the current task:
+
 1. Read docs/prd.md for context on what we're building
 2. Check docs/architecture.md for system design constraints
 3. Check docs/adr/ for architecture decisions that affect this area
@@ -423,6 +458,7 @@ Refer to the project documentation relevant to the current task:
 5. Check the last git commit to understand what was done before
 
 Once you have context:
+
 - Get the next available task from the task tracker
 - Implement it following the project conventions in .claude/rules/
 - The pre-commit hook will enforce the quality gate automatically
@@ -431,8 +467,10 @@ Once you have context:
 ```
 
 **`/review` (`.claude/commands/review.md`):**
+
 ```markdown
 Review the current working changes:
+
 1. Run `git diff` to see what changed
 2. Check each changed file against the applicable .claude/rules/
 3. Verify tests exist for new functionality (integration tests, not mocks)
@@ -458,8 +496,10 @@ Review the current working changes:
 5. **Test as regression gate** — Before any commit, all existing tests must pass. This is already in the quality gate (F8) but the testing rule reinforces: never skip tests, never delete a failing test to make CI green
 
 **Impact on PRD template (F2):** The PRD template's feature section includes a `Demo test` field:
+
 ```markdown
 ### Feature: User Authentication
+
 - **Business outcome:** Users can sign up and log in securely
 - **Demo test:** `POST /auth/signup` with valid payload returns 201 + JWT;
   `POST /auth/login` with those credentials returns 200 + new JWT;
@@ -468,14 +508,17 @@ Review the current working changes:
 ```
 
 **Impact on task descriptions:** Both Task Master and simple markdown task templates include:
+
 - **"What success looks like"** — already present, now explicitly tied to a runnable test
 - **"Demo command"** — the single command that proves the task works (e.g., `npm test -- --grep "auth"`, `curl localhost:3000/health`)
 
 **Impact on agent instructions (`.claude/rules/testing.md`):**
+
 ```markdown
 # Testing Rules
 
 ## Default: Integration tests
+
 - Write tests that exercise real code paths. Use actual database connections,
   real HTTP requests to local servers, real file I/O.
 - Only mock external 3rd-party services. Add a comment: `// Mock: <service> — no local instance available`
@@ -483,18 +526,22 @@ Review the current working changes:
   the test may be testing the wrong layer.
 
 ## Demo checkpoints
+
 - Each feature task should produce at least one integration test that
   demonstrates the feature working end-to-end.
 - Name demo tests clearly: `it('demo: user can sign up and access protected route')`
 - These tests double as regression guards — never delete or skip them.
 
 ## Smoke tests for wiring tasks
+
 - Setup/config tasks that don't have a business outcome get smoke tests:
   app starts, health check passes, key dependencies connect.
 - Mark these as `it('smoke: ...')` so they're easy to identify.
 
 ## Quality gate (pre-commit)
+
 1. Format → 2. Lint → 3. Type-check → 4. Build → 5. ALL tests pass
+
 - Never delete a test to make the suite pass.
 - Never mark a task done if tests are failing.
 ```
@@ -506,7 +553,8 @@ Review the current working changes:
 **What gets generated (when opted in):**
 
 1. **`~/.claude/settings.json` environment flag:**
-The wizard prompts "Enable Claude Code agent teams mode? (y/N)" and, if accepted, merges the following into the user's `~/.claude/settings.json`:
+   The wizard prompts "Enable Claude Code agent teams mode? (y/N)" and, if accepted, merges the following into the user's `~/.claude/settings.json`:
+
 ```json
 {
   "env": {
@@ -514,23 +562,28 @@ The wizard prompts "Enable Claude Code agent teams mode? (y/N)" and, if accepted
   }
 }
 ```
+
 This is a **user-level** setting (not project-level) because agent teams is a Claude Code capability, not a project config. The wizard reads the existing file, merges the `env` key (preserving other settings), and writes it back. If the file doesn't exist, it creates it.
 
 2. **`.claude/rules/agent-teams.md`** (global scope):
+
 ```markdown
 # Agent Teams Guidance
 
 ## When to use teams
+
 - Multiple independent features with no shared files
 - Large refactors where subsystems can be worked on in parallel
 - Test writing for existing code (each agent handles a different module)
 
 ## When NOT to use teams
+
 - Sequential tasks with dependencies
 - Database migrations or shared state changes
 - Early project setup (one agent is more predictable)
 
 ## Team coordination
+
 - Team lead (Opus) coordinates; teammates (Sonnet) execute
 - Each teammate works on its own branch
 - Teammates should NOT modify the same files
@@ -548,6 +601,7 @@ This is a **user-level** setting (not project-level) because agent teams is a Cl
 **Part 1: Early Installation (Step 0)**
 
 Before the wizard begins:
+
 1. Check if `claude` is on PATH
 2. If missing: `npm install -g @anthropic-ai/claude-code`
 3. Verify with `claude --version`
@@ -556,6 +610,7 @@ Before the wizard begins:
 **Part 2: In-Wizard Assistance (Optional)**
 
 During the wizard, Claude Code headless can optionally enhance specific steps:
+
 - **Step 3 (PRD):** After the user fills in their PRD template, offer to run Claude headless to review it for completeness — missing success criteria, vague feature descriptions, no demo-test definitions
 - **Step 4 (Architecture):** After architecture selection, Claude can suggest which rules and MCP servers are most relevant for that architecture pattern
 
@@ -568,6 +623,7 @@ After all files are generated (Steps 1–8), the wizard runs Claude Code in head
 **Audit manifest:** The wizard tracks every file it creates/modifies during the run in a `generated_files[]` array. This manifest is passed to the audit prompt so Claude reviews only what was just generated — not pre-existing project code.
 
 **Audit prompt (passed to `claude --headless`):**
+
 ```
 You are auditing the output of the ai-init project bootstrap tool.
 Review ONLY the files listed below — these were just generated by the setup wizard.
@@ -611,11 +667,13 @@ the user should take before starting development with an AI agent.
 ```
 
 **Audit output handling:**
+
 - Results are printed to the terminal as part of Step 10 (Summary)
 - Also saved to `.ai-init-audit.md` in the project root for reference
 - The file is added to `.gitignore` (it's a transient setup artifact)
 
 **Graceful degradation:**
+
 - If Claude Code is not installed: audit is skipped, wizard prints "Skipping AI audit — Claude Code not available"
 - If API auth fails: same skip behavior with message "Skipping AI audit — no API credentials"
 - If the audit itself errors: catch the error, print "Audit failed — review generated files manually", continue to summary
@@ -683,6 +741,7 @@ ai-helper-tools/
 ```
 
 **Design decisions:**
+
 - **TypeScript CLI, bash bootstrap:** The CLI is TypeScript for testability and maintainability. A thin `install.sh` handles bootstrapping Node.js (via fnm) so the user never needs to manually install anything. After install, `ai-init` is a single command on PATH.
 - **Generators are pure functions:** Every generator takes a config object and returns `{ path, content }[]`. No filesystem side effects. This makes them trivially testable without mocks or temp dirs.
 - **Templates are plain markdown:** No templating engine. Templates use `{{PLACEHOLDER}}` markers that string replacement handles during generation. Simple, debuggable.
@@ -693,6 +752,7 @@ ai-helper-tools/
 ## 7. Development Phases
 
 ### Phase 1: TypeScript Foundation & Claude Code Bootstrap
+
 - Scaffold TypeScript project (package.json, tsconfig, vitest)
 - Create `install.sh` bootstrap script (fnm + clone + symlink)
 - Implement Claude Code installation check and bootstrap (F11 Part 1)
@@ -701,6 +761,7 @@ ai-helper-tools/
 - Integration test: run `ai-init` in temp dir, verify files exist, clean up
 
 ### Phase 2: Document Scaffolding, Agent Instructions & Testing Strategy
+
 - Create all templates including testing_strategy.md and onboarding.md (F2)
 - Implement doc_format.md standard with ADR numbering convention
 - Generate `.claude/rules/` with integration-first testing rules (F3, F9)
@@ -709,12 +770,14 @@ ai-helper-tools/
 - PRD template includes demo-test and acceptance-test fields per feature
 
 ### Phase 3: Expanded MCP & Task Tracker
+
 - Add beads-mcp to registry (F4)
 - Implement task tracker selection (F5)
 - Generate tracker-specific CLAUDE.md instructions
 - Simple markdown task file template
 
 ### Phase 4: Wizard, Kickstart & Git
+
 - Interactive wizard flow (F6)
 - PRD template with editor handoff
 - Architecture picker
@@ -725,6 +788,7 @@ ai-helper-tools/
 - Agent teams opt-in configuration (F10)
 
 ### Phase 5: AI Audit & Polish
+
 - Claude Code headless audit step with structured prompt (F11 Parts 2 & 3)
 - Generated file manifest tracking for scoped audit
 - Audit output rendering and `.ai-init-audit.md` persistence
@@ -747,18 +811,18 @@ ai-helper-tools/
 
 ## 9. Risks
 
-| Risk | Impact | Mitigation |
-|---|---|---|
-| Too many doc templates overwhelm users | Users skip the wizard | Default to minimal set; wizard clearly marks optional steps |
-| Beads API/install changes frequently (active development) | Broken MCP config | Pin to stable release; document manual override |
-| Claude Code agent teams feature is experimental | Generated config may not work | Gate behind opt-in flag; don't hard-depend on it |
-| TypeScript adds Node.js dependency | Can't run without Node | install.sh bootstraps Node via fnm automatically; fnm is a single binary |
-| Templates go stale as agent best practices evolve | Docs mislead agents | Version templates; document update process |
-| Agents ignore testing rules and write mocks anyway | False test confidence, regressions | Pre-commit hook enforces all tests pass; rules explicitly call out when mocking is acceptable |
-| Pre-commit hook blocks when no linter/tests configured | Frustrating on new projects | Hook uses `--if-present` flags; silently skips unconfigured steps |
-| Claude Code headless audit consumes API credits | Unexpected cost for users | Explicit cost warning + skip prompt before running audit |
-| Claude Code not installed or no API key | Audit step fails | Graceful skip with clear message; wizard never blocks on audit |
-| Audit prompt produces inconsistent or hallucinated findings | User acts on bad advice | Audit prompt is tightly scoped to generated files only; manifest-driven |
+| Risk                                                        | Impact                             | Mitigation                                                                                    |
+| ----------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------- |
+| Too many doc templates overwhelm users                      | Users skip the wizard              | Default to minimal set; wizard clearly marks optional steps                                   |
+| Beads API/install changes frequently (active development)   | Broken MCP config                  | Pin to stable release; document manual override                                               |
+| Claude Code agent teams feature is experimental             | Generated config may not work      | Gate behind opt-in flag; don't hard-depend on it                                              |
+| TypeScript adds Node.js dependency                          | Can't run without Node             | install.sh bootstraps Node via fnm automatically; fnm is a single binary                      |
+| Templates go stale as agent best practices evolve           | Docs mislead agents                | Version templates; document update process                                                    |
+| Agents ignore testing rules and write mocks anyway          | False test confidence, regressions | Pre-commit hook enforces all tests pass; rules explicitly call out when mocking is acceptable |
+| Pre-commit hook blocks when no linter/tests configured      | Frustrating on new projects        | Hook uses `--if-present` flags; silently skips unconfigured steps                             |
+| Claude Code headless audit consumes API credits             | Unexpected cost for users          | Explicit cost warning + skip prompt before running audit                                      |
+| Claude Code not installed or no API key                     | Audit step fails                   | Graceful skip with clear message; wizard never blocks on audit                                |
+| Audit prompt produces inconsistent or hallucinated findings | User acts on bad advice            | Audit prompt is tightly scoped to generated files only; manifest-driven                       |
 
 ## 10. Out of Scope
 
@@ -767,5 +831,5 @@ ai-helper-tools/
 - **Custom agent creation engine** — generating separate agent personas (security agent, API agent) is unnecessary. Claude Code's `.claude/rules/` with path-scoping achieves the same effect natively: a rule scoped to `src/auth/**` makes Claude behave like a security specialist when editing auth code, without building or running a separate agent. Rules compose automatically — multiple rules load simultaneously when their paths match — so the system scales to any number of domain concerns without orchestration code.
 - **Framework-specific templates** — no React, Next.js, Express, etc. boilerplate. The doc templates are framework-agnostic; framework specifics belong in the user's project rules.
 - **Gemini / Copilot config generation** — while the doc structure is compatible, we only generate Claude Code-specific files (`.claude/`, `CLAUDE.md`). Cross-agent config generation is a future consideration.
-- **AI-driven PRD generation** — the wizard provides templates and opens an editor. Claude Code headless may *review* a user-written PRD for completeness (F11), but it does not *generate* the PRD content.
+- **AI-driven PRD generation** — the wizard provides templates and opens an editor. Claude Code headless may _review_ a user-written PRD for completeness (F11), but it does not _generate_ the PRD content.
 - **Deployment, hosting, or infrastructure config** — this tool sets up the dev environment, not prod.

@@ -12,6 +12,7 @@ Multi-dimensional analysis based on requested focus area.
 ### 1. **Analysis Modes**
 
 Based on $ARGUMENTS:
+
 - "velocity" → Sprint velocity and trends
 - "quality" → Code quality metrics
 - "risk" → Risk assessment and mitigation
@@ -43,12 +44,14 @@ Recommendations:
 ### 3. **Risk Assessment**
 
 **Technical Risks**
+
 - High complexity tasks without backup assignee
 - Single points of failure in architecture
 - Insufficient test coverage in critical paths
 - Technical debt accumulation rate
 
 **Project Risks**
+
 - Critical path dependencies
 - Resource availability gaps
 - Deadline feasibility analysis
@@ -57,6 +60,7 @@ Recommendations:
 ### 4. **Dependency Intelligence**
 
 Visual dependency analysis:
+
 ```
 Critical Path:
 #12 → #15 → #23 → #45 → #50 (20 days)
@@ -69,12 +73,14 @@ Time Saved: 3 days
 ### 5. **Quality Metrics**
 
 **Code Quality**
+
 - Test coverage trends
 - Complexity scores
 - Technical debt ratio
 - Review feedback patterns
 
 **Process Quality**
+
 - Rework frequency
 - Bug introduction rate
 - Time to resolution
@@ -83,6 +89,7 @@ Time Saved: 3 days
 ### 6. **Predictive Insights**
 
 Based on patterns:
+
 - Completion probability by deadline
 - Resource needs projection
 - Risk materialization likelihood
@@ -91,6 +98,7 @@ Based on patterns:
 ### 7. **Executive Dashboard**
 
 High-level summary with:
+
 - Health score (0-100)
 - Top 3 risks
 - Top 3 opportunities

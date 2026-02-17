@@ -47,6 +47,7 @@ Available Models:
 ## Next Actions
 
 Based on configuration:
+
 - If missing API keys → Suggest setup
 - If no research model → Explain benefits
 - If all configured → Show usage tips

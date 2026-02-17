@@ -32,6 +32,7 @@ task-master models --setup
 ## Smart Recommendations
 
 Based on your needs:
+
 - **For best results**: Claude + Perplexity
 - **Budget conscious**: GPT-3.5 + Perplexity
 - **Maximum capability**: GPT-4 + Perplexity + Claude fallback
@@ -39,6 +40,7 @@ Based on your needs:
 ## Configuration Storage
 
 Keys can be stored in:
+
 1. Environment variables (recommended)
 2. `.env` file in project
 3. Global `.taskmaster/config`
@@ -46,6 +48,7 @@ Keys can be stored in:
 ## Post-Setup
 
 After configuration:
+
 - Test each provider
 - Show usage examples
 - Suggest next steps

@@ -56,6 +56,7 @@ When installing or adding **any** npm package, pip package, or other dependency:
 7. **Log findings** — Use `update_subtask` to record what was done, any issues found and fixed, and confirmation that all checks passed.
 
 ### Only Then:
+
 - Call `set_task_status --status=done` (or `--status=review` if using the checker workflow).
 - If you cannot make all checks pass, set status to `blocked` and explain the blocker in the subtask update.
 

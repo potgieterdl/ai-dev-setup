@@ -9,4 +9,3 @@ Task orchestration, dependency tracking, and multi-agent coordination.
 Manages task state in `.taskmaster/tasks/tasks.json`. Use `expand_task --research` before starting new parent tasks.
 
 **Tool tier**: `all` (full feature set — 44+ tools including tags, dependencies, research, and autopilot).
-
