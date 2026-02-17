@@ -26,9 +26,7 @@
             "id": 2,
             "title": "Create tsconfig.json and vitest.config.ts",
             "description": "Add TypeScript compiler configuration targeting ES2022 with ESNext modules and bundler resolution, plus a vitest configuration that picks up tests from the test/ directory.",
-            "dependencies": [
-              1
-            ],
+            "dependencies": [1],
             "details": "1. Create `/workspaces/ai-dev-setup/tsconfig.json` with `compilerOptions`: `target: ES2022`, `module: ESNext`, `moduleResolution: bundler`, `outDir: dist`, `rootDir: src`, `strict: true`, `esModuleInterop: true`, `skipLibCheck: true`, `declaration: true`; `include: [\"src\"]`. 2. Create `/workspaces/ai-dev-setup/vitest.config.ts` importing `defineConfig` from `vitest/config`, exporting config with `test.globals: true` and `test.include: ['test/**/*.test.ts']`. 3. Run `npx tsc --noEmit --project tsconfig.json` (will error on missing src/ but confirms tsconfig is parsed correctly — no syntax errors). 4. Run `npx vitest --version` to confirm vitest CLI resolves.",
             "status": "done",
             "testStrategy": "Run `npx tsc --version` and `npx vitest --version` — both must print version strings without errors. Running `npm run typecheck` may report 'no input files' which is acceptable at this stage (src/ is empty).",
@@ -39,9 +37,7 @@
             "id": 3,
             "title": "Scaffold directory structure under src/, templates/, test/, and dist/",
             "description": "Create all required empty directories so subsequent tasks can place files in the correct locations without needing to create parent directories themselves.",
-            "dependencies": [
-              1
-            ],
+            "dependencies": [1],
             "details": "Create the following directories (use `mkdir -p` for nested paths): `src/phases/`, `src/generators/`, `templates/docs/`, `templates/rules/`, `templates/skills/`, `templates/hooks/`, `templates/commands/`, `test/generators/`, `test/integration/`, `test/fixtures/`. Each directory should contain a `.gitkeep` file so the structure is committed to git. The `dist/` directory will be created by the TypeScript compiler and should NOT contain a `.gitkeep` — it is gitignored.",
             "status": "done",
             "testStrategy": "Run `find src templates test -type d | sort` and verify all 10 directories appear. Confirm `dist/` does not exist yet (it is created only after `npm run build`).",
@@ -52,9 +48,7 @@
             "id": 4,
             "title": "Update .gitignore to exclude dist/ and ensure node_modules/ is covered",
             "description": "Add `dist/` to the existing .gitignore file so compiled output is never committed. Confirm `node_modules/` is already present (it is) so no duplicate entry is needed.",
-            "dependencies": [
-              1
-            ],
+            "dependencies": [1],
             "details": "1. Read the existing `/workspaces/ai-dev-setup/.gitignore`. 2. It already contains `node_modules/` on line 10. 3. Append `dist/` as a new line (and optionally `*.tsbuildinfo` for incremental build cache). 4. Do NOT remove any existing entries — only add the missing `dist/` line. 5. Verify `.vscode` is in .gitignore (it already is on line 18 — no change needed). The final .gitignore should have both `node_modules/` and `dist/` entries.",
             "status": "done",
             "testStrategy": "Run `grep -E '^dist/$' .gitignore` — must output `dist/`. Run `git check-ignore -v dist/` after creating a dummy `dist/` directory to confirm git ignores it.",
@@ -65,11 +59,7 @@
             "id": 5,
             "title": "Create a minimal src/cli.ts entry point and verify the full build pipeline",
             "description": "Add a minimal TypeScript entry point so that `npm run build`, `npm run typecheck`, and `npm run test` all succeed with zero errors, satisfying the smoke-test acceptance criteria for this task.",
-            "dependencies": [
-              2,
-              3,
-              4
-            ],
+            "dependencies": [2, 3, 4],
             "details": "1. Create `/workspaces/ai-dev-setup/src/cli.ts` with a minimal shebang and main guard: `#!/usr/bin/env node` followed by `console.log('ai-init v0.1.0');`. This gives the TypeScript compiler a valid input file. 2. Run `npm run build` — this executes `tsc` and should produce `dist/cli.js` and `dist/cli.d.ts` with zero errors. 3. Run `npm run typecheck` — must exit 0. 4. Run `npm run test` — vitest will run with no test files matched; this is acceptable (exits 0 with 'No test files found'). 5. Optionally run `node dist/cli.js` to confirm the compiled output executes without runtime errors.",
             "status": "done",
             "testStrategy": "All four commands must succeed: `npm run build` (exit 0, dist/ populated), `npm run typecheck` (exit 0), `npm run test` (exit 0 or 'no tests' warning — not an error), `node dist/cli.js` prints version string.",
@@ -86,9 +76,7 @@
         "details": "Create `src/types.ts`:\n\n```typescript\nexport type TaskTracker = 'taskmaster' | 'beads' | 'markdown';\nexport type Architecture = 'monolith' | '2-tier' | '3-tier' | 'microservices' | 'skip';\n\nexport interface McpServer {\n  name: string;\n  description: string;\n  npmPackage: string;\n  claudeMcpName: string;\n  required: boolean;\n  args?: string[];\n  env?: Record<string, string>;\n}\n\nexport interface FileDescriptor {\n  path: string;\n  content: string;\n  executable?: boolean;\n}\n\nexport interface ProjectConfig {\n  // MCP selections\n  selectedMcps: string[];\n  // Task tracker\n  taskTracker: TaskTracker;\n  // Architecture\n  architecture: Architecture;\n  // PRD\n  prdPath?: string;       // path to existing PRD, or undefined if using template\n  hasPrd: boolean;\n  // Feature flags\n  generateDocs: boolean;\n  generateRules: boolean;\n  generateSkills: boolean;\n  generateHooks: boolean;\n  generateCommands: boolean;\n  agentTeamsEnabled: boolean;\n  runAudit: boolean;\n  // Derived from selections\n  hasApiDocs: boolean;    // whether docs/api.md should be generated\n  hasDatabase: boolean;   // whether database rules should be generated\n  // Project metadata\n  projectName: string;\n  projectRoot: string;\n  // Tracking for audit\n  generatedFiles: string[];\n}\n\nexport interface AuditResult {\n  passes: string[];\n  fills: { file: string; section: string; message: string }[];\n  fixes: { file: string; issue: string; fix: string }[];\n  postSetupChecklist: string[];\n}\n```\n\nCreate `src/defaults.ts`:\n```typescript\nimport { ProjectConfig } from './types.js';\nimport path from 'node:path';\n\nexport function defaultConfig(projectRoot: string): ProjectConfig {\n  return {\n    selectedMcps: ['taskmaster'],\n    taskTracker: 'taskmaster',\n    architecture: 'skip',\n    hasPrd: false,\n    generateDocs: true,\n    generateRules: true,\n    generateSkills: true,\n    generateHooks: true,\n    generateCommands: true,\n    agentTeamsEnabled: false,\n    runAudit: true,\n    hasApiDocs: false,\n    hasDatabase: false,\n    projectName: path.basename(projectRoot),\n    projectRoot,\n    generatedFiles: [],\n  };\n}\n```",
         "testStrategy": "TypeScript type-check (`tsc --noEmit`) must pass with zero errors. Write a unit test `test/generators/types.test.ts` that imports `ProjectConfig` and `FileDescriptor` and verifies default config shape matches expected defaults.",
         "priority": "high",
-        "dependencies": [
-          "1"
-        ],
+        "dependencies": ["1"],
         "status": "done",
         "subtasks": [
           {
@@ -106,9 +94,7 @@
             "id": 2,
             "title": "Create src/defaults.ts with defaultConfig factory function",
             "description": "Create the `src/defaults.ts` file that exports a `defaultConfig(projectRoot: string): ProjectConfig` function returning a fully-populated default configuration object.",
-            "dependencies": [
-              1
-            ],
+            "dependencies": [1],
             "details": "Create `/workspaces/ai-dev-setup/src/defaults.ts`. Import `ProjectConfig` from `'./types.js'` (must use `.js` extension for ESM resolution with `moduleResolution: bundler`). Import `path` from `'node:path'`. Implement and export `defaultConfig(projectRoot: string): ProjectConfig` returning an object with: `selectedMcps: ['taskmaster']`, `taskTracker: 'taskmaster'`, `architecture: 'skip'`, `hasPrd: false`, `generateDocs: true`, `generateRules: true`, `generateSkills: true`, `generateHooks: true`, `generateCommands: true`, `agentTeamsEnabled: false`, `runAudit: true`, `hasApiDocs: false`, `hasDatabase: false`, `projectName: path.basename(projectRoot)`, `projectRoot`, `generatedFiles: []`. Note: `prdPath` is intentionally omitted (optional field, undefined by default). Ensure all required `ProjectConfig` fields are covered so TypeScript does not complain about missing properties.",
             "status": "done",
             "testStrategy": "Call `defaultConfig('/some/path/myproject')` and assert `projectName === 'myproject'`, `taskTracker === 'taskmaster'`, `generatedFiles` is an empty array, and `hasPrd === false`.",
@@ -119,10 +105,7 @@
             "id": 3,
             "title": "Verify tsconfig.json covers src/types.ts and src/defaults.ts",
             "description": "Confirm the existing `tsconfig.json` `include` pattern covers the new files and that module resolution settings are compatible with `.js` extension imports in ESM.",
-            "dependencies": [
-              1,
-              2
-            ],
+            "dependencies": [1, 2],
             "details": "Read `/workspaces/ai-dev-setup/tsconfig.json`. The current config includes `\"include\": [\"src\"]` and uses `\"moduleResolution\": \"bundler\"` with `\"module\": \"ESNext\"`. Confirm that `src/types.ts` and `src/defaults.ts` are within scope. Verify that using `import { ProjectConfig } from './types.js'` inside `src/defaults.ts` is valid under `moduleResolution: bundler` (it is — bundler mode allows omitting extensions but also accepts explicit `.js`). If any tsconfig issues are found (e.g., `rootDir` mismatch), correct them. Run `npm run typecheck` to confirm zero errors after both files are created.",
             "status": "done",
             "testStrategy": "Run `npx tsc --noEmit` from the project root. Expect exit code 0 with no diagnostic output.",
@@ -133,11 +116,7 @@
             "id": 4,
             "title": "Write unit test for types and defaultConfig in test/types.test.ts",
             "description": "Create `test/types.test.ts` using Vitest that imports `ProjectConfig`, `FileDescriptor` from `src/types.ts` and `defaultConfig` from `src/defaults.ts`, then asserts correct shape and values.",
-            "dependencies": [
-              1,
-              2,
-              3
-            ],
+            "dependencies": [1, 2, 3],
             "details": "Create `/workspaces/ai-dev-setup/test/types.test.ts`. Use Vitest (`import { describe, it, expect } from 'vitest'`). Import `defaultConfig` from `'../src/defaults.js'`. Import types `ProjectConfig` and `FileDescriptor` from `'../src/types.js'` (TypeScript imports only — used for type assertions). Write a `describe('defaultConfig', ...)` block with tests: (1) `defaultConfig('/tmp/myproject').projectName` equals `'myproject'`; (2) `defaultConfig('/tmp/myproject').taskTracker` equals `'taskmaster'`; (3) `defaultConfig('/tmp/myproject').generatedFiles` is an empty array; (4) `defaultConfig('/tmp/myproject').hasPrd` is `false`; (5) a `FileDescriptor` shape test that constructs `{ path: 'foo.md', content: 'bar' }` and checks it satisfies the interface (via TypeScript compile check, not runtime assertion). Ensure the test file is not inside `src/` since `tsconfig.json` only includes `src` — Vitest picks up test files from the project root via its own config.",
             "status": "done",
             "testStrategy": "Run `npm test` and verify all assertions in `test/types.test.ts` pass with exit code 0.",
@@ -148,12 +127,7 @@
             "id": 5,
             "title": "Run full quality gate: format, lint, typecheck, build, and test",
             "description": "Execute the mandatory pre-completion checklist — format, lint, typecheck, build, and test — fixing any failures before marking the task done.",
-            "dependencies": [
-              1,
-              2,
-              3,
-              4
-            ],
+            "dependencies": [1, 2, 3, 4],
             "details": "Run the following commands in order from `/workspaces/ai-dev-setup`: (1) `npm run format` — Prettier formats `src/types.ts`, `src/defaults.ts`, and `test/types.test.ts`. (2) `npm run lint` — ESLint checks `src/**/*.ts` and `test/**/*.ts`; fix any lint errors in the new files. (3) `npm run typecheck` — `tsc --noEmit` must exit with 0 errors. (4) `npm run build` — `tsc` compiles to `dist/`; verify `dist/types.d.ts` and `dist/defaults.d.ts` are emitted. (5) `npm test` — Vitest runs all tests including `test/types.test.ts`; all must pass. If any step fails, fix the issue and re-run from that step. Common issues to watch for: missing `.js` extension on relative imports in ESM, unused type imports triggering lint warnings, or `strict: true` requiring explicit return types.",
             "status": "done",
             "testStrategy": "All five commands (`format`, `lint`, `typecheck`, `build`, `test`) must exit with code 0. Confirm `dist/types.d.ts` exists and exports `ProjectConfig`. Confirm `dist/defaults.js` exports `defaultConfig`.",
@@ -170,11 +144,66 @@
         "details": "Create `src/registry.ts`:\n\n```typescript\nimport { McpServer } from './types.js';\n\nexport const MCP_REGISTRY: McpServer[] = [\n  {\n    name: 'taskmaster',\n    description: 'Task Master AI — task orchestration, dependency tracking, multi-agent coordination',\n    npmPackage: 'task-master-ai',\n    claudeMcpName: 'taskmaster-ai',\n    required: false,\n    args: ['-y', 'task-master-ai'],\n    env: {\n      TASK_MASTER_TOOLS: 'all',\n      ANTHROPIC_API_KEY: '${ANTHROPIC_API_KEY}',\n      PERPLEXITY_API_KEY: '${PERPLEXITY_API_KEY}',\n    },\n  },\n  {\n    name: 'beads',\n    description: 'Beads — distributed git-backed issue tracking for multi-agent workflows',\n    npmPackage: 'beads-mcp',\n    claudeMcpName: 'beads',\n    required: false,\n    args: ['-y', 'beads-mcp'],\n    env: {},\n  },\n  {\n    name: 'context7',\n    description: 'Context7 — up-to-date library docs and code examples via MCP',\n    npmPackage: '@upstash/context7-mcp',\n    claudeMcpName: 'context7',\n    required: false,\n    args: ['-y', '@upstash/context7-mcp'],\n    env: {},\n  },\n  {\n    name: 'browsermcp',\n    description: 'BrowserMCP — browser automation for testing (navigate, click, screenshots)',\n    npmPackage: '@anthropic-ai/mcp-server-puppeteer',\n    claudeMcpName: 'browsermcp',\n    required: false,\n    args: ['-y', '@anthropic-ai/mcp-server-puppeteer'],\n    env: {},\n  },\n  {\n    name: 'sequential-thinking',\n    description: 'Sequential Thinking — dynamic problem-solving through thought sequences',\n    npmPackage: '@anthropic-ai/mcp-server-sequential-thinking',\n    claudeMcpName: 'sequential-thinking',\n    required: false,\n    args: ['-y', '@anthropic-ai/mcp-server-sequential-thinking'],\n    env: {},\n  },\n];\n\nexport function getMcpByName(name: string): McpServer | undefined {\n  return MCP_REGISTRY.find(s => s.name === name);\n}\n\nexport function getSelectedServers(selectedNames: string[]): McpServer[] {\n  return MCP_REGISTRY.filter(s => selectedNames.includes(s.name));\n}\n```",
         "testStrategy": "Unit test `test/generators/registry.test.ts`: assert registry has 5 entries, beads entry exists with correct npmPackage 'beads-mcp', taskmaster entry has TASK_MASTER_TOOLS env var, `getMcpByName('context7')` returns correct server, `getSelectedServers(['taskmaster', 'beads'])` returns exactly 2 servers.",
         "priority": "high",
-        "dependencies": [
-          "2"
+        "dependencies": ["2"],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create src/registry.ts with MCP_REGISTRY array",
+            "description": "Create the main registry file with all 5 MCP server definitions as a typed McpServer[] array, importing from './types.js'.",
+            "dependencies": [],
+            "details": "Create `/workspaces/ai-dev-setup/src/registry.ts`. Import `McpServer` from `'./types.js'`. Export a const `MCP_REGISTRY: McpServer[]` containing exactly 5 entries: taskmaster (npmPackage: 'task-master-ai', claudeMcpName: 'taskmaster-ai', env with TASK_MASTER_TOOLS, ANTHROPIC_API_KEY, PERPLEXITY_API_KEY using `${...}` template literals), beads (npmPackage: 'beads-mcp', claudeMcpName: 'beads', empty env), context7 (npmPackage: '@upstash/context7-mcp', claudeMcpName: 'context7', empty env), browsermcp (npmPackage: '@anthropic-ai/mcp-server-puppeteer', claudeMcpName: 'browsermcp', empty env), and sequential-thinking (npmPackage: '@anthropic-ai/mcp-server-sequential-thinking', claudeMcpName: 'sequential-thinking', empty env). All entries must have `required: false` and appropriate `args: ['-y', '<npmPackage>']`.",
+            "status": "done",
+            "testStrategy": null,
+            "updatedAt": "2026-02-17T19:53:49.399Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement getMcpByName and getSelectedServers helper functions",
+            "description": "Add the two exported lookup/filter functions to src/registry.ts that downstream generators and the wizard will use to query the registry.",
+            "dependencies": [1],
+            "details": "In the same `/workspaces/ai-dev-setup/src/registry.ts` file created in subtask 1, add: (1) `export function getMcpByName(name: string): McpServer | undefined` — returns `MCP_REGISTRY.find(s => s.name === name)`. (2) `export function getSelectedServers(selectedNames: string[]): McpServer[]` — returns `MCP_REGISTRY.filter(s => selectedNames.includes(s.name))`. Both functions must handle edge cases gracefully (unknown name returns undefined, empty array returns []).",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T19:53:50.108Z"
+          },
+          {
+            "id": 3,
+            "title": "Write unit tests for MCP_REGISTRY contents",
+            "description": "Create test/registry.test.ts to verify the shape and contents of MCP_REGISTRY match expected values.",
+            "dependencies": [1, 2],
+            "details": "Create `/workspaces/ai-dev-setup/test/registry.test.ts` using vitest (`describe`/`it`/`expect`). Import `{ MCP_REGISTRY, getMcpByName, getSelectedServers }` from `'../src/registry.js'`. Write tests asserting: (1) `MCP_REGISTRY.length === 5`, (2) beads entry exists with `npmPackage === 'beads-mcp'` and `claudeMcpName === 'beads'`, (3) taskmaster entry has `env.TASK_MASTER_TOOLS === 'all'`, (4) `getMcpByName('context7')` returns the context7 server object, (5) `getMcpByName('nonexistent')` returns `undefined`, (6) `getSelectedServers(['taskmaster', 'beads'])` returns exactly 2 entries, (7) `getSelectedServers([])` returns an empty array. Follow the pattern from existing `test/types.test.ts`.",
+            "status": "done",
+            "testStrategy": "Run `npm test` and verify all registry test cases pass with zero failures.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T19:54:16.724Z"
+          },
+          {
+            "id": 4,
+            "title": "Run format, lint, typecheck, and build quality gates",
+            "description": "Execute the full pre-completion checklist: prettier format, eslint, tsc typecheck, and tsc build — fixing any issues found.",
+            "dependencies": [3],
+            "details": "Run these commands sequentially from `/workspaces/ai-dev-setup`: (1) `npm run format` — auto-fixes formatting in src/registry.ts and test/registry.test.ts. (2) `npm run lint` — fix any eslint errors reported in the new files. (3) `npm run typecheck` — ensure `tsc --noEmit` passes with zero errors; the McpServer import path must use `.js` extension per ESM rules. (4) `npm run build` — ensure `tsc` compiles successfully and `dist/registry.js` is emitted. Fix any type errors: check that all McpServer fields (name, description, npmPackage, claudeMcpName, required, args, env) satisfy the interface defined in `src/types.ts`.",
+            "status": "done",
+            "testStrategy": "All four commands must exit with code 0 before proceeding.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T19:54:53.270Z"
+          },
+          {
+            "id": 5,
+            "title": "Run full test suite and verify registry tests pass",
+            "description": "Execute npm test to confirm the new registry tests pass alongside existing types tests, with zero failures.",
+            "dependencies": [4],
+            "details": "Run `npm test` from `/workspaces/ai-dev-setup`. Verify: (1) All tests in `test/types.test.ts` still pass (no regressions), (2) All 7+ tests in `test/registry.test.ts` pass, (3) Overall test suite exits with code 0. If any test fails, diagnose the failure — common causes include wrong import paths (must use `.js` extension for ESM), incorrect env value strings (the `${ANTHROPIC_API_KEY}` must be a literal string, not an interpolated value), or a mismatch between expected registry length and actual entries. Fix and re-run until clean.",
+            "status": "done",
+            "testStrategy": "npm test must report 0 failing tests across all test files.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T19:54:53.872Z"
+          }
         ],
-        "status": "pending",
-        "subtasks": []
+        "updatedAt": "2026-02-17T19:54:53.872Z"
       },
       {
         "id": "4",
@@ -183,9 +212,7 @@
         "details": "Create `src/utils.ts`:\n\n```typescript\nimport fs from 'node:fs/promises';\nimport path from 'node:path';\nimport { execFile } from 'node:child_process';\nimport { promisify } from 'node:util';\nimport { FileDescriptor } from './types.js';\n\nconst execFileAsync = promisify(execFile);\n\n/**\n * Write all file descriptors to disk. Creates parent directories as needed.\n * Skips writing if the file already exists and overwrite is false.\n * Returns the list of paths actually written.\n */\nexport async function writeFiles(\n  files: FileDescriptor[],\n  root: string,\n  overwrite = true\n): Promise<string[]> {\n  const written: string[] = [];\n  for (const file of files) {\n    const fullPath = path.resolve(root, file.path);\n    await fs.mkdir(path.dirname(fullPath), { recursive: true });\n    if (!overwrite) {\n      try {\n        await fs.access(fullPath);\n        continue; // skip existing file\n      } catch {\n        // file doesn't exist, proceed\n      }\n    }\n    await fs.writeFile(fullPath, file.content, 'utf8');\n    if (file.executable) {\n      await fs.chmod(fullPath, 0o755);\n    }\n    written.push(file.path);\n  }\n  return written;\n}\n\n/**\n * Run a shell command and return stdout. Throws on non-zero exit.\n */\nexport async function run(\n  cmd: string,\n  args: string[],\n  cwd?: string\n): Promise<string> {\n  const { stdout } = await execFileAsync(cmd, args, { cwd });\n  return stdout.trim();\n}\n\n/**\n * Check if a command is available on PATH.\n */\nexport async function commandExists(cmd: string): Promise<boolean> {\n  try {\n    await execFileAsync('which', [cmd]);\n    return true;\n  } catch {\n    return false;\n  }\n}\n\n/**\n * Replace {{PLACEHOLDER}} markers in a template string.\n */\nexport function fillTemplate(\n  template: string,\n  vars: Record<string, string>\n): string {\n  return template.replace(/\\{\\{(\\w+)\\}\\}/g, (_, key) => vars[key] ?? `{{${key}}}`);\n}\n\n/**\n * Read a file relative to project root, return null if missing.\n */\nexport async function readOptional(\n  filePath: string\n): Promise<string | null> {\n  try {\n    return await fs.readFile(filePath, 'utf8');\n  } catch {\n    return null;\n  }\n}\n```",
         "testStrategy": "Unit test `test/generators/utils.test.ts` using a temp directory (use `os.tmpdir()` + random suffix, clean up in afterEach): test `writeFiles` creates nested directories and files, test `fillTemplate` replaces all placeholders, test `writeFiles` with `overwrite=false` skips existing files, test `commandExists('node')` returns true.",
         "priority": "high",
-        "dependencies": [
-          "2"
-        ],
+        "dependencies": ["2"],
         "status": "pending",
         "subtasks": []
       },
@@ -196,9 +223,7 @@
         "details": "Create the following template files:\n\n**`templates/docs/doc_format.md`** — the meta-standard all docs follow:\n- TLDR section (1-3 sentences)\n- TOC with `#section` anchors\n- Sections < 30 lines\n- Tables over prose for structured data\n- Cross-references as relative links\n- Max ~500 lines; split into sub-docs if larger\n\n**`templates/docs/prd.md`** — PRD template with:\n- Problem / Solution / Features / Phases sections\n- Feature template includes: Business outcome, Demo test (single command proving feature works), Acceptance criteria\n- `{{PROJECT_NAME}}` placeholder\n\n**`templates/docs/architecture.md`** — Architecture overview:\n- TLDR, tier overview (adapts to chosen architecture: monolith/2-tier/3-tier/microservices)\n- Component map, links to detail docs\n- `{{ARCHITECTURE}}` and `{{PROJECT_NAME}}` placeholders\n\n**`templates/docs/api.md`** — API surface:\n- Table format: Endpoint | Method | Description | ADR ref | Source file\n- Auth section\n- Error shapes section\n- `{{PROJECT_NAME}}` placeholder\n\n**`templates/docs/cuj.md`** — Critical user journeys:\n- Step-by-step flows agents should understand\n- One section per major user journey\n\n**`templates/docs/testing_strategy.md`** — Testing philosophy:\n- Integration-first principle\n- Demo-test definition\n- Mock justification rules\n- Quality gate steps\n\n**`templates/docs/onboarding.md`** — Quick-start guide:\n- Project context (1 para)\n- Key commands table\n- Where to find things (map of important files/dirs)\n- First steps for a new developer or agent\n\n**`templates/docs/adr_template.md`** — ADR format:\n```markdown\n# ADR-{{NUMBER}}: {{TITLE}}\n- **Status:** Proposed\n- **Context:** Why this decision was needed\n- **Decision:** What was decided\n- **Consequences:** Trade-offs accepted\n```\n\n**`templates/docs/tasks_simple.md`** — Simple task tracker:\n```markdown\n# Task Tracker\n## Summary\n| # | Task | Status | Depends |\n|---|------|--------|---------|\n| 1 | Example task | [ ] | — |\n\n## Tasks\n### Task 1: Example task\n- **Status:** Pending\n- **Depends on:** —\n- **Success:** App runs without errors\n- **Demo command:** `npm start`\n```\n\nAll templates should follow doc_format.md standard themselves.",
         "testStrategy": "Test that all template files exist via `fs.access()`. Test that `fillTemplate` correctly substitutes `{{PROJECT_NAME}}` and `{{ARCHITECTURE}}` in the architecture template. Test that prd.md template contains the 'Demo test' field placeholder. Test that no template exceeds 500 lines.",
         "priority": "high",
-        "dependencies": [
-          "4"
-        ],
+        "dependencies": ["4"],
         "status": "pending",
         "subtasks": []
       },
@@ -209,9 +234,7 @@
         "details": "**Rules templates (`templates/rules/`):**\n\n`general.md` — global scope: language version, package manager, coding style placeholders\n\n`docs.md` — scope: `docs/**`: how to read/update docs, follow doc_format.md standard\n\n`testing.md` — scope: `**/*.test.*`, `**/*.spec.*`:\n```markdown\n---\npaths:\n  - \"**/*.test.*\"\n  - \"**/*.spec.*\"\n---\n# Testing Rules\n## Default: Integration tests\n- Write tests that exercise real code paths. Use actual database connections, real HTTP requests, real file I/O.\n- Only mock external 3rd-party services. Add a comment: `// Mock: <service> — no local instance available`\n- If mocking more than 2 dependencies, reconsider: the test may be testing the wrong layer.\n## Demo checkpoints\n- Each feature task must produce at least one integration test demonstrating the feature end-to-end.\n- Name: `it('demo: user can sign up and access protected route')`\n## Smoke tests\n- Setup tasks get minimal smoke tests: app starts, health check passes, key dependencies connect.\n- Mark: `it('smoke: ...')`\n## Quality gate\n1. Format → 2. Lint → 3. Type-check → 4. Build → 5. ALL tests pass\n- Never delete a test to make the suite pass.\n```\n\n`git.md` — global scope: branch naming `feat/<task-id>-<desc>`, commit format `<task-id>: <what> — <value>`, one feature branch at a time\n\n`security.md` — scope: `src/auth/**`, `src/middleware/**`, `**/*secret*`: input validation, no credential logging, OWASP basics\n\n`api.md` — scope: `src/api/**`, `src/routes/**`: RESTful conventions, standard error shapes, input validation, references `@docs/api.md`\n\n`database.md` — scope: `src/db/**`, `src/models/**`, `**/migrations/**`: parameterized queries, migration discipline, no raw SQL\n\n`config.md` — scope: `**/*.config.*`, `**/.env*`: never hardcode secrets, use env vars, document in .env.example\n\n`agent-teams.md` — global scope: when to use teams, when not to, coordination rules\n\n**Skills templates (`templates/skills/`):**\n\n`testing.md` — activates on: test, coverage, demo — integration-first philosophy, demo-test patterns\n\n`commit.md` — activates on: commit, push, branch — full commit workflow: quality gate → format → lint → type-check → build → test → commit\n\n`task-workflow.md` — activates on: next task, pick up, start working — how to pick, implement, verify, and close a task\n\n**Hooks (`templates/hooks/`):**\n\n`pre-commit.sh`:\n```bash\n#!/usr/bin/env bash\nset -euo pipefail\necho \"Running quality gate before commit...\"\nnpm run format --if-present 2>/dev/null || true\nnpm run lint --if-present || { echo \"BLOCK: Lint errors found.\"; exit 1; }\nnpm run typecheck --if-present || { echo \"BLOCK: Type errors found.\"; exit 1; }\nnpm run build --if-present || { echo \"BLOCK: Build failed.\"; exit 1; }\nnpm test --if-present || { echo \"BLOCK: Tests failing.\"; exit 1; }\necho \"Quality gate passed.\"\n```\n\n**Commands (`templates/commands/`):**\n\n`dev-next.md` — `/dev-next` command:\n1. Read docs/prd.md, docs/architecture.md, docs/adr/ for context\n2. Check dependency chain and last git commit\n3. Get next task from tracker\n4. Implement following .claude/rules/\n5. Commit: `<task-id>: <change> — <value>`\n6. Report and ask to continue\n\n`review.md` — `/review` command:\n1. Run `git diff`\n2. Check each changed file against applicable .claude/rules/\n3. Verify integration tests exist\n4. Run full quality gate\n5. Report: ready/needs-fixing\n\n**Boot prompt (`templates/boot-prompt.txt`):** Session startup instructions referencing project docs and chosen task tracker (uses `{{TASK_TRACKER}}` placeholder).",
         "testStrategy": "Test that all template files exist. Test `testing.md` rule contains 'Integration tests', 'Demo checkpoints', and 'Quality gate' sections. Test `pre-commit.sh` contains `--if-present` flag and correct exit codes. Test `dev-next.md` references `docs/prd.md` and `docs/adr/`. Test `git.md` contains the branch naming pattern `feat/<task-id>`.",
         "priority": "high",
-        "dependencies": [
-          "5"
-        ],
+        "dependencies": ["5"],
         "status": "pending",
         "subtasks": []
       },
@@ -222,10 +245,7 @@
         "details": "Create `src/generators/mcp-json.ts`:\n\n```typescript\nimport { ProjectConfig, FileDescriptor } from '../types.js';\nimport { getSelectedServers } from '../registry.js';\n\ninterface McpServerConfig {\n  command: string;\n  args: string[];\n  env?: Record<string, string>;\n}\n\nfunction buildClaudeCodeMcpConfig(\n  config: ProjectConfig\n): Record<string, McpServerConfig> {\n  const servers = getSelectedServers(config.selectedMcps);\n  const result: Record<string, McpServerConfig> = {};\n  for (const server of servers) {\n    result[server.claudeMcpName] = {\n      command: 'npx',\n      args: server.args ?? ['-y', server.npmPackage],\n      ...(server.env && Object.keys(server.env).length > 0\n        ? { env: server.env }\n        : {}),\n    };\n  }\n  return result;\n}\n\nfunction buildVscodeMcpConfig(\n  config: ProjectConfig\n): Record<string, unknown> {\n  const servers = getSelectedServers(config.selectedMcps);\n  const result: Record<string, unknown> = {};\n  for (const server of servers) {\n    const envBlock: Record<string, string> = {};\n    for (const [key] of Object.entries(server.env ?? {})) {\n      envBlock[key] = `\\${env:${key}}`;\n    }\n    result[server.claudeMcpName] = {\n      command: 'npx',\n      args: server.args ?? ['-y', server.npmPackage],\n      cwd: '${workspaceFolder}',\n      ...(Object.keys(envBlock).length > 0 ? { env: envBlock } : {}),\n      envFile: '${workspaceFolder}/.env',\n      type: 'stdio',\n    };\n  }\n  return result;\n}\n\nexport function generateMcpJson(config: ProjectConfig): FileDescriptor[] {\n  return [\n    {\n      path: '.mcp.json',\n      content: JSON.stringify(\n        { mcpServers: buildClaudeCodeMcpConfig(config) },\n        null,\n        2\n      ),\n    },\n    {\n      path: '.vscode/mcp.json',\n      content: JSON.stringify(\n        { servers: buildVscodeMcpConfig(config) },\n        null,\n        2\n      ),\n    },\n  ];\n}\n```\n\nKey design constraints:\n- `.mcp.json` root key: `\"mcpServers\"`\n- `.vscode/mcp.json` root key: `\"servers\"`, adds `cwd`, `envFile`, `type: \"stdio\"`, env vars use `${env:VAR}` syntax\n- Both use `npx` as command\n- Pure function — no filesystem access",
         "testStrategy": "Unit test `test/generators/mcp-json.test.ts`:\n1. With `selectedMcps: ['taskmaster']` → `.mcp.json` has `mcpServers.taskmaster-ai`, `.vscode/mcp.json` has `servers.taskmaster-ai` with `cwd: '${workspaceFolder}'`\n2. With `selectedMcps: ['taskmaster', 'beads']` → both configs have 2 entries\n3. `.mcp.json` does NOT have `cwd` field\n4. `.vscode/mcp.json` env values use `${env:ANTHROPIC_API_KEY}` format\n5. Both outputs are valid JSON (JSON.parse succeeds)\n6. Generator returns exactly 2 FileDescriptors",
         "priority": "high",
-        "dependencies": [
-          "3",
-          "4"
-        ],
+        "dependencies": ["3", "4"],
         "status": "pending",
         "subtasks": []
       },
@@ -236,11 +256,7 @@
         "details": "Create `src/generators/claude-md.ts`:\n\n```typescript\nimport { ProjectConfig, FileDescriptor } from '../types.js';\nimport { getSelectedServers } from '../registry.js';\n\nfunction buildTaskTrackerInstructions(config: ProjectConfig): string {\n  switch (config.taskTracker) {\n    case 'taskmaster':\n      return `## Task Tracker: Task Master AI\n\n**Import Task Master's workflow commands:**\n@./.taskmaster/CLAUDE.md\n\n- \\`task-master next\\` — Get next task\n- \\`task-master show <id>\\` — View task details  \n- \\`task-master set-status --id=<id> --status=done\\` — Mark complete\n- \\`task-master update-subtask --id=<id> --prompt=\"...\"\\` — Log progress`;\n\n    case 'beads':\n      return `## Task Tracker: Beads\n\n**Beads tools:** beads_ready, beads_create, beads_show, beads_update, beads_close, beads_dep_add, beads_dep_tree, beads_sync\n\n- \\`bd show\\` — View current tasks\n- \\`bd next\\` — Get next task\n- Reference tasks in commits: \\`bd-<hash>: <change> — <value>\\`\n- Run \\`bd sync\\` before push`;\n\n    case 'markdown':\n      return `## Task Tracker: Simple Markdown\n\n- Edit \\`TASKS.md\\` directly\n- Mark tasks with \\`[x]\\` when done\n- Add demo command for each task before marking done`;\n  }\n}\n\nfunction buildMcpSection(config: ProjectConfig): string {\n  const servers = getSelectedServers(config.selectedMcps);\n  if (servers.length === 0) return '';\n  const lines = servers.map(s => `- **${s.claudeMcpName}**: ${s.description}`);\n  return `## MCP Servers\\n\\n${lines.join('\\n')}`;\n}\n\nexport function generateClaudeMd(config: ProjectConfig): FileDescriptor[] {\n  const docImports = config.generateDocs\n    ? `\n## Project Documentation\n@docs/doc_format.md\n@docs/prd.md\n@docs/architecture.md\n@docs/testing_strategy.md\n@docs/onboarding.md\n`.trim()\n    : '';\n\n  const rulesRef = config.generateRules\n    ? `\\n## Agent Rules\\nPath-scoped rules in \\`.claude/rules/\\` auto-load based on the file being edited.`\n    : '';\n\n  const claudeMdContent = `<!-- SETUP-AI-MANAGED — regenerated by ai-init -->\n\n# Project Instructions for Claude Code\n\n${docImports}\n\n${buildTaskTrackerInstructions(config)}\n\n${buildMcpSection(config)}\n\n${rulesRef}\n\n## Quality Gate\n\nBefore marking any task done:\n1. Format: \\`npm run format\\`\n2. Lint: \\`npm run lint\\`  \n3. Type-check: \\`npm run typecheck\\`\n4. Build: \\`npm run build\\`\n5. Test: \\`npm test\\`\n`.trim();\n\n  const files: FileDescriptor[] = [\n    { path: 'CLAUDE.md', content: claudeMdContent },\n  ];\n\n  // Generate CLAUDE_MCP.md with MCP tool docs\n  const servers = getSelectedServers(config.selectedMcps);\n  if (servers.length > 0) {\n    const mcpDocs = servers\n      .map(s => `## ${s.claudeMcpName}\\n\\n${s.description}\\n\\n**Package:** \\`${s.npmPackage}\\``)\n      .join('\\n\\n---\\n\\n');\n    files.push({\n      path: 'CLAUDE_MCP.md',\n      content: `# MCP Servers Available\\n\\n${mcpDocs}\\n`,\n    });\n  }\n\n  return files;\n}\n```\n\nThe CLAUDE.md must use `@import` syntax for doc references so Claude Code auto-loads them. Tracker-specific instructions must be accurate — agents rely on these to know which commands to use.",
         "testStrategy": "Unit test `test/generators/claude-md.test.ts`:\n1. With `taskTracker: 'taskmaster'` → output contains `@./.taskmaster/CLAUDE.md` and `task-master next`\n2. With `taskTracker: 'beads'` → output contains `beads_ready` and `bd sync`\n3. With `taskTracker: 'markdown'` → output contains `TASKS.md`\n4. With `generateDocs: true` → CLAUDE.md contains `@docs/prd.md`\n5. With `selectedMcps: ['taskmaster', 'context7']` → CLAUDE_MCP.md lists both servers\n6. With `selectedMcps: []` → only CLAUDE.md returned (no CLAUDE_MCP.md)\n7. CLAUDE.md contains the Quality Gate section",
         "priority": "high",
-        "dependencies": [
-          "3",
-          "4",
-          "5"
-        ],
+        "dependencies": ["3", "4", "5"],
         "status": "pending",
         "subtasks": []
       },
@@ -251,10 +267,7 @@
         "details": "Create `src/generators/docs.ts`:\n\n```typescript\nimport fs from 'node:fs/promises';\nimport path from 'node:path';\nimport { ProjectConfig, FileDescriptor } from '../types.js';\nimport { fillTemplate } from '../utils.js';\n\nconst TEMPLATES_DIR = new URL('../../templates/docs', import.meta.url).pathname;\n\nasync function readTemplate(name: string): Promise<string> {\n  return fs.readFile(path.join(TEMPLATES_DIR, name), 'utf8');\n}\n\nexport async function generateDocs(config: ProjectConfig): Promise<FileDescriptor[]> {\n  const vars: Record<string, string> = {\n    PROJECT_NAME: config.projectName,\n    ARCHITECTURE: config.architecture,\n    YEAR: new Date().getFullYear().toString(),\n    TASK_TRACKER: config.taskTracker,\n  };\n\n  const files: FileDescriptor[] = [];\n\n  // Core docs always generated\n  const coreDocs = [\n    { template: 'doc_format.md', output: 'docs/doc_format.md' },\n    { template: 'prd.md', output: 'docs/prd.md' },\n    { template: 'architecture.md', output: 'docs/architecture.md' },\n    { template: 'cuj.md', output: 'docs/cuj.md' },\n    { template: 'testing_strategy.md', output: 'docs/testing_strategy.md' },\n    { template: 'onboarding.md', output: 'docs/onboarding.md' },\n  ];\n\n  for (const { template, output } of coreDocs) {\n    const content = await readTemplate(template);\n    files.push({ path: output, content: fillTemplate(content, vars) });\n  }\n\n  // API docs — only if hasApiDocs\n  if (config.hasApiDocs) {\n    const content = await readTemplate('api.md');\n    files.push({ path: 'docs/api.md', content: fillTemplate(content, vars) });\n  }\n\n  // ADR directory with example ADR and template\n  const adrTemplate = await readTemplate('adr_template.md');\n  files.push({\n    path: 'docs/adr/adr_template.md',\n    content: fillTemplate(adrTemplate, { ...vars, NUMBER: 'NNN', TITLE: 'Decision Title' }),\n  });\n\n  // Task tracker file — only for simple markdown\n  if (config.taskTracker === 'markdown') {\n    const content = await readTemplate('tasks_simple.md');\n    files.push({\n      path: 'TASKS.md',\n      content: fillTemplate(content, vars),\n    });\n  }\n\n  return files;\n}\n```\n\nThe generator must be async because it reads template files. Note: `import.meta.url` requires `\"type\": \"module\"` in package.json and ESM output from TypeScript.",
         "testStrategy": "Unit test `test/generators/docs.test.ts`:\n1. With `generateDocs: true, hasApiDocs: false` → output contains `docs/doc_format.md`, `docs/prd.md`, `docs/architecture.md` but NOT `docs/api.md`\n2. With `hasApiDocs: true` → output contains `docs/api.md`\n3. With `taskTracker: 'markdown'` → output contains `TASKS.md`\n4. With `taskTracker: 'taskmaster'` → output does NOT contain `TASKS.md`\n5. `{{PROJECT_NAME}}` is replaced with config.projectName in all generated content\n6. ADR template file is always included",
         "priority": "high",
-        "dependencies": [
-          "4",
-          "5"
-        ],
+        "dependencies": ["4", "5"],
         "status": "pending",
         "subtasks": []
       },
@@ -265,10 +278,7 @@
         "details": "**`src/generators/rules.ts`:**\n```typescript\nimport fs from 'node:fs/promises';\nimport path from 'node:path';\nimport { ProjectConfig, FileDescriptor } from '../types.js';\nimport { fillTemplate } from '../utils.js';\n\nconst RULES_DIR = new URL('../../templates/rules', import.meta.url).pathname;\n\nasync function readRule(name: string): Promise<string> {\n  return fs.readFile(path.join(RULES_DIR, name), 'utf8');\n}\n\nexport async function generateRules(config: ProjectConfig): Promise<FileDescriptor[]> {\n  const vars = { PROJECT_NAME: config.projectName, TASK_TRACKER: config.taskTracker };\n  const files: FileDescriptor[] = [];\n\n  // Always generated\n  const alwaysRules = ['general.md', 'docs.md', 'testing.md', 'git.md', 'security.md', 'config.md'];\n  for (const name of alwaysRules) {\n    files.push({\n      path: `.claude/rules/${name}`,\n      content: fillTemplate(await readRule(name), vars),\n    });\n  }\n\n  // Conditional — API rules only if api docs selected\n  if (config.hasApiDocs) {\n    const content = await readRule('api.md');\n    const withImport = config.generateDocs\n      ? content + '\\n\\n@docs/api.md'\n      : content;\n    files.push({ path: '.claude/rules/api.md', content: fillTemplate(withImport, vars) });\n  }\n\n  // Conditional — database rules only if project has DB\n  if (config.hasDatabase) {\n    files.push({\n      path: '.claude/rules/database.md',\n      content: fillTemplate(await readRule('database.md'), vars),\n    });\n  }\n\n  // Conditional — agent teams rule only if opted in\n  if (config.agentTeamsEnabled) {\n    files.push({\n      path: '.claude/rules/agent-teams.md',\n      content: fillTemplate(await readRule('agent-teams.md'), vars),\n    });\n  }\n\n  return files;\n}\n```\n\n**`src/generators/skills.ts`:**\n```typescript\nexport async function generateSkills(config: ProjectConfig): Promise<FileDescriptor[]> {\n  // Read skill templates and return FileDescriptors\n  // All three skills always generated: testing.md, commit.md, task-workflow.md\n  // task-workflow.md gets TASK_TRACKER substituted\n}\n```\n\n**`src/generators/hooks.ts`:**\n```typescript\nexport async function generateHooks(config: ProjectConfig): Promise<FileDescriptor[]> {\n  // Generate .claude/hooks/pre-commit.sh (executable)\n  // Generate .claude/settings.json entry for PreToolUse hook\n  return [\n    {\n      path: '.claude/hooks/pre-commit.sh',\n      content: preCommitContent,\n      executable: true,\n    },\n  ];\n}\n```\n\n`.claude/settings.json` update: add the hook matcher. Read existing settings.json if present, merge the hooks entry.",
         "testStrategy": "Unit tests `test/generators/rules.test.ts`, `skills.test.ts`, `hooks.test.ts`:\n1. Rules: With `hasApiDocs: false` → no `api.md` rule generated\n2. Rules: With `hasApiDocs: true, generateDocs: true` → `api.md` rule contains `@docs/api.md`\n3. Rules: With `agentTeamsEnabled: true` → `agent-teams.md` rule generated\n4. Rules: Always includes `testing.md` with 'Integration tests' and 'Demo checkpoints' sections\n5. Skills: All 3 skill files generated, `task-workflow.md` has tracker-specific content\n6. Hooks: `pre-commit.sh` is marked executable, contains `--if-present` flags\n7. Hooks: Pre-commit content has all 5 quality gate steps in order",
         "priority": "high",
-        "dependencies": [
-          "4",
-          "6"
-        ],
+        "dependencies": ["4", "6"],
         "status": "pending",
         "subtasks": []
       },
@@ -279,10 +289,7 @@
         "details": "Create `src/generators/devcontainer.ts`:\n\n```typescript\nimport { ProjectConfig, FileDescriptor } from '../types.js';\n\ninterface DevcontainerConfig {\n  name: string;\n  image: string;\n  features: Record<string, unknown>;\n  onCreateCommand: string;\n  postCreateCommand: string;\n  postStartCommand: string;\n  customizations: {\n    vscode: {\n      extensions: string[];\n    };\n  };\n  secrets: Record<string, { description: string; documentationUrl: string }>;\n  containerEnv: Record<string, string>;\n  remoteEnv: Record<string, string>;\n}\n\nexport function generateDevcontainer(config: ProjectConfig): FileDescriptor[] {\n  const devcontainer: DevcontainerConfig = {\n    name: config.projectName,\n    image: 'mcr.microsoft.com/devcontainers/universal:2',\n    features: {\n      'ghcr.io/devcontainers/features/node:1': { version: '20' },\n    },\n    onCreateCommand: 'ai-init on-create',\n    postCreateCommand: 'ai-init post-create',\n    postStartCommand: 'ai-init post-start',\n    customizations: {\n      vscode: {\n        extensions: [\n          'GitHub.copilot',\n          'GitHub.copilot-chat',\n        ],\n      },\n    },\n    secrets: {\n      ANTHROPIC_API_KEY: {\n        description: 'Anthropic API key for Claude Code',\n        documentationUrl: 'https://console.anthropic.com/settings/keys',\n      },\n    },\n    containerEnv: { ANTHROPIC_API_KEY: '${localEnv:ANTHROPIC_API_KEY}' },\n    remoteEnv: { ANTHROPIC_API_KEY: '${localEnv:ANTHROPIC_API_KEY}' },\n  };\n\n  return [\n    {\n      path: '.devcontainer/devcontainer.json',\n      content: JSON.stringify(devcontainer, null, 2),\n    },\n  ];\n}\n```\n\nThis is a pure function (sync) since it doesn't read templates — it builds the config object directly. The lifecycle commands use `ai-init` (the symlinked CLI binary) rather than `setup-ai.sh`, enabling the TypeScript tool to replace the bash bootstrap entirely.",
         "testStrategy": "Unit test `test/generators/devcontainer.test.ts`:\n1. Output contains exactly one FileDescriptor with path `.devcontainer/devcontainer.json`\n2. Parsed JSON has `onCreateCommand: 'ai-init on-create'`\n3. Parsed JSON has `postCreateCommand: 'ai-init post-create'`\n4. Parsed JSON has `postStartCommand: 'ai-init post-start'`\n5. JSON is valid (JSON.parse succeeds without throwing)\n6. `config.projectName` appears as the `name` field",
         "priority": "medium",
-        "dependencies": [
-          "2",
-          "4"
-        ],
+        "dependencies": ["2", "4"],
         "status": "pending",
         "subtasks": []
       },
@@ -293,10 +300,7 @@
         "details": "Create `src/generators/commands.ts`:\n\n```typescript\nimport fs from 'node:fs/promises';\nimport path from 'node:path';\nimport { ProjectConfig, FileDescriptor } from '../types.js';\nimport { fillTemplate } from '../utils.js';\n\nconst COMMANDS_DIR = new URL('../../templates/commands', import.meta.url).pathname;\nconst TEMPLATES_DIR = new URL('../../templates', import.meta.url).pathname;\n\nexport async function generateCommands(config: ProjectConfig): Promise<FileDescriptor[]> {\n  const vars: Record<string, string> = {\n    PROJECT_NAME: config.projectName,\n    TASK_TRACKER: config.taskTracker,\n    TASK_TRACKER_NEXT: getTrackerNextCommand(config.taskTracker),\n    TASK_TRACKER_DONE: getTrackerDoneCommand(config.taskTracker),\n  };\n\n  const devNext = await fs.readFile(path.join(COMMANDS_DIR, 'dev-next.md'), 'utf8');\n  const review = await fs.readFile(path.join(COMMANDS_DIR, 'review.md'), 'utf8');\n  const bootPrompt = await fs.readFile(path.join(TEMPLATES_DIR, 'boot-prompt.txt'), 'utf8');\n\n  return [\n    { path: '.claude/commands/dev-next.md', content: fillTemplate(devNext, vars) },\n    { path: '.claude/commands/review.md', content: fillTemplate(review, vars) },\n    { path: '.claude/boot-prompt.txt', content: fillTemplate(bootPrompt, vars) },\n  ];\n}\n\nfunction getTrackerNextCommand(tracker: string): string {\n  switch (tracker) {\n    case 'taskmaster': return 'task-master next';\n    case 'beads': return 'bd show';\n    case 'markdown': return 'Read TASKS.md and find the next pending task';\n    default: return 'task-master next';\n  }\n}\n\nfunction getTrackerDoneCommand(tracker: string): string {\n  switch (tracker) {\n    case 'taskmaster': return 'task-master set-status --id=<id> --status=done';\n    case 'beads': return 'bd update <id> --status done && bd sync';\n    case 'markdown': return 'Edit TASKS.md and mark task as [x]';\n    default: return 'task-master set-status --id=<id> --status=done';\n  }\n}\n```\n\nThe `dev-next.md` command references docs/adr/ for architecture decisions — this cross-reference makes the command self-updating as the project adds ADRs.",
         "testStrategy": "Unit test `test/generators/commands.test.ts`:\n1. With `taskTracker: 'taskmaster'` → `dev-next.md` contains `task-master next`\n2. With `taskTracker: 'beads'` → `dev-next.md` contains `bd show`\n3. Output always includes 3 files: `dev-next.md`, `review.md`, `boot-prompt.txt`\n4. `review.md` contains `git diff` reference\n5. `boot-prompt.txt` has tracker-specific content substituted",
         "priority": "medium",
-        "dependencies": [
-          "4",
-          "6"
-        ],
+        "dependencies": ["4", "6"],
         "status": "pending",
         "subtasks": []
       },
@@ -307,15 +311,7 @@
         "details": "**`src/phases/on-create.ts`** — Heavy installs, called once during Codespace creation:\n```typescript\nimport { run, commandExists } from '../utils.js';\n\nexport async function runOnCreate(): Promise<void> {\n  console.log('[ai-init] Phase: on-create — installing global tools...');\n  \n  // Install Claude Code if not present\n  if (!(await commandExists('claude'))) {\n    await run('npm', ['install', '-g', '@anthropic-ai/claude-code']);\n  }\n  \n  // Install Task Master if not present\n  if (!(await commandExists('task-master'))) {\n    await run('npm', ['install', '-g', 'task-master-ai']);\n  }\n  \n  console.log('[ai-init] on-create complete.');\n}\n```\n\n**`src/phases/post-create.ts`** — Project configuration, orchestrates all generators:\n```typescript\nimport { ProjectConfig } from '../types.js';\nimport { writeFiles } from '../utils.js';\nimport { generateMcpJson } from '../generators/mcp-json.js';\nimport { generateClaudeMd } from '../generators/claude-md.js';\nimport { generateDocs } from '../generators/docs.js';\nimport { generateRules } from '../generators/rules.js';\nimport { generateSkills } from '../generators/skills.js';\nimport { generateHooks } from '../generators/hooks.js';\nimport { generateDevcontainer } from '../generators/devcontainer.js';\nimport { generateCommands } from '../generators/commands.js';\n\nexport async function runPostCreate(\n  config: ProjectConfig,\n  overwrite = true\n): Promise<string[]> {\n  const allFiles = [\n    ...generateMcpJson(config),\n    ...generateClaudeMd(config),\n    ...(config.generateDocs ? await generateDocs(config) : []),\n    ...(config.generateRules ? await generateRules(config) : []),\n    ...(config.generateSkills ? await generateSkills(config) : []),\n    ...(config.generateHooks ? await generateHooks(config) : []),\n    ...generateDevcontainer(config),\n    ...(config.generateCommands ? await generateCommands(config) : []),\n  ];\n\n  const written = await writeFiles(allFiles, config.projectRoot, overwrite);\n  return written;\n}\n```\n\n**`src/phases/post-start.ts`** — Per-session setup:\n```typescript\nexport async function runPostStart(config: ProjectConfig): Promise<void> {\n  // 1. Sync .env from secrets (copy ANTHROPIC_API_KEY etc. to .env if not present)\n  // 2. Print welcome banner with task progress\n  // 3. Show pending task count from tasks.json or TASKS.md\n}\n```\n\nThe post-start banner reads `.taskmaster/tasks/tasks.json` if using Task Master, or `TASKS.md` if using simple markdown, and prints a summary of pending tasks.",
         "testStrategy": "Integration test `test/integration/phases.test.ts`:\n1. `runPostCreate` in a temp directory creates expected files for a minimal config\n2. With `overwrite: false`, existing files are not overwritten\n3. `runPostCreate` returns the list of written file paths\n4. All file paths in the return value actually exist on disk after the call\n5. Smoke test: `runOnCreate` doesn't throw when claude/task-master already exist",
         "priority": "high",
-        "dependencies": [
-          "4",
-          "7",
-          "8",
-          "9",
-          "10",
-          "11",
-          "12"
-        ],
+        "dependencies": ["4", "7", "8", "9", "10", "11", "12"],
         "status": "pending",
         "subtasks": []
       },
@@ -326,10 +322,7 @@
         "details": "Create `src/wizard.ts`:\n\n```typescript\nimport { select, checkbox, confirm, input } from '@inquirer/prompts';\nimport { ProjectConfig, TaskTracker, Architecture } from './types.js';\nimport { MCP_REGISTRY } from './registry.js';\nimport { defaultConfig } from './defaults.js';\n\nconst NON_INTERACTIVE = process.env.SETUP_AI_NONINTERACTIVE === '1';\n\nfunction fromEnv<T>(key: string, fallback: T): T {\n  const val = process.env[key];\n  return val !== undefined ? (val as unknown as T) : fallback;\n}\n\nexport async function runWizard(projectRoot: string): Promise<ProjectConfig> {\n  const config = defaultConfig(projectRoot);\n\n  console.log('\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');\n  console.log('  AI Project Init — Setup Wizard');\n  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n');\n\n  // Step 0: Claude Code Bootstrap (handled in on-create phase, just verify here)\n  // Step 1: MCP Server Selection\n  if (NON_INTERACTIVE) {\n    const envMcps = process.env.SETUP_AI_MCPS;\n    config.selectedMcps = envMcps ? envMcps.split(',') : ['taskmaster'];\n  } else {\n    const choices = MCP_REGISTRY.map(s => ({\n      name: `${s.name} — ${s.description}`,\n      value: s.name,\n      checked: s.name === 'taskmaster',\n    }));\n    config.selectedMcps = await checkbox({\n      message: 'Step 1: Select MCP servers to configure:',\n      choices,\n    });\n    // Ensure taskmaster is included if selected as tracker\n  }\n\n  // Step 2: Task Tracker\n  if (NON_INTERACTIVE) {\n    config.taskTracker = fromEnv<TaskTracker>('SETUP_AI_TRACKER', 'taskmaster');\n  } else {\n    config.taskTracker = await select({\n      message: 'Step 2: Choose a task tracker:',\n      choices: [\n        { name: 'Task Master (recommended — subtasks, research, complexity analysis)', value: 'taskmaster' },\n        { name: 'Beads (multi-agent, git-native issue tracking)', value: 'beads' },\n        { name: 'Simple Markdown (for small projects, ≤20 tasks)', value: 'markdown' },\n      ],\n      default: 'taskmaster',\n    }) as TaskTracker;\n  }\n\n  // Step 3: PRD\n  // Step 4: Architecture\n  if (NON_INTERACTIVE) {\n    config.architecture = fromEnv<Architecture>('SETUP_AI_ARCH', 'skip');\n  } else {\n    config.architecture = await select({\n      message: 'Step 4: Project architecture (populates docs/architecture.md):',\n      choices: [\n        { name: 'Skip', value: 'skip' },\n        { name: 'Monolith', value: 'monolith' },\n        { name: '2-tier (frontend + backend)', value: '2-tier' },\n        { name: '3-tier (frontend + API + database)', value: '3-tier' },\n        { name: 'Microservices', value: 'microservices' },\n      ],\n    }) as Architecture;\n  }\n\n  // Steps 5-6: API and Doc generation\n  if (!NON_INTERACTIVE) {\n    config.hasApiDocs = await confirm({ message: 'Step 5: Generate API docs template?', default: config.architecture !== 'skip' && config.architecture !== 'monolith' });\n    config.hasDatabase = await confirm({ message: 'Does this project use a database?', default: config.architecture === '3-tier' });\n  }\n\n  // Step 7: Generate docs/rules/skills/hooks confirmation\n  // Step 8: Agent Teams\n  if (NON_INTERACTIVE) {\n    config.agentTeamsEnabled = process.env.SETUP_AI_AGENT_TEAMS === '1';\n  } else {\n    config.agentTeamsEnabled = await confirm({\n      message: 'Step 8 (Optional): Enable Claude Code experimental agent teams mode?',\n      default: false,\n    });\n  }\n\n  // Step 9: Audit\n  if (NON_INTERACTIVE) {\n    config.runAudit = process.env.SETUP_AI_SKIP_AUDIT !== '1';\n  } else {\n    config.runAudit = await confirm({\n      message: 'Step 9: Run AI-powered audit of generated files? (uses API credits)',\n      default: true,\n    });\n  }\n\n  return config;\n}\n```\n\n**Non-interactive env vars supported:**\n- `SETUP_AI_NONINTERACTIVE=1` — skip all prompts\n- `SETUP_AI_MCPS=taskmaster,context7` — pre-select MCPs\n- `SETUP_AI_TRACKER=taskmaster|beads|markdown`\n- `SETUP_AI_ARCH=monolith|2-tier|3-tier|microservices|skip`\n- `SETUP_AI_AGENT_TEAMS=1`\n- `SETUP_AI_SKIP_AUDIT=1`",
         "testStrategy": "Integration test `test/integration/wizard.test.ts` using `@inquirer/testing` to automate prompt responses:\n1. Wizard returns valid `ProjectConfig` with all required fields\n2. Non-interactive mode (`SETUP_AI_NONINTERACTIVE=1`) returns defaults without prompting\n3. `SETUP_AI_MCPS=taskmaster,context7` → `selectedMcps` contains both\n4. `SETUP_AI_TRACKER=beads` → `taskTracker === 'beads'`\n5. `SETUP_AI_SKIP_AUDIT=1` → `runAudit === false`",
         "priority": "high",
-        "dependencies": [
-          "3",
-          "13"
-        ],
+        "dependencies": ["3", "13"],
         "status": "pending",
         "subtasks": []
       },
@@ -340,10 +333,7 @@
         "details": "Create `src/audit.ts`:\n\n```typescript\nimport fs from 'node:fs/promises';\nimport path from 'node:path';\nimport { commandExists, run } from './utils.js';\nimport { ProjectConfig } from './types.js';\n\nconst AUDIT_PROMPT_TEMPLATE = `You are auditing the output of the ai-init project bootstrap tool.\nReview ONLY the files listed below — these were just generated by the setup wizard.\nDo NOT review or comment on any other files in the project.\n\nGenerated files:\n{{GENERATED_FILES}}\n\nAudit checklist:\n1. STRUCTURE: Are all generated docs following the format in docs/doc_format.md?\n   Check: TOC present, sections <30 lines, tables for structured data, TLDR at top.\n\n2. CROSS-REFERENCES: Does CLAUDE.md accurately reference all generated docs?\n   Check: Every @import points to a file that exists. No broken references.\n\n3. RULES CONSISTENCY: Do .claude/rules/ files reference correct path patterns?\n   Check: Rules that @import docs reference docs that were actually generated.\n\n4. MCP CONFIG: Is .mcp.json valid JSON with correct package names?\n   Check: All selected MCP servers present. No duplicates.\n\n5. TEMPLATE COMPLETENESS: Which sections still have placeholder content the user MUST fill?\n   Flag each file and specific section.\n\n6. GAPS: What is missing that the user should address manually?\n\n7. AGENT INSTRUCTIONS: Are CLAUDE.md and rules well-structured and actionable?\n   Flag any vague or generic instructions.\n\nOutput format:\n- ✅ PASS: <area> — <one-line summary>\n- ⚠️  FILL: <file>:<section> — <what the user needs to add>\n- ❌ FIX: <file>:<issue> — <what's wrong and how to fix it>\n\nEnd with a numbered \"Post-Setup Checklist\" of manual actions before starting development.`;\n\nexport async function checkClaudeCodeAvailable(): Promise<boolean> {\n  if (!(await commandExists('claude'))) {\n    return false;\n  }\n  try {\n    await run('claude', ['--version']);\n    return true;\n  } catch {\n    return false;\n  }\n}\n\nexport async function installClaudeCode(): Promise<void> {\n  console.log('[ai-init] Installing Claude Code...');\n  await run('npm', ['install', '-g', '@anthropic-ai/claude-code']);\n}\n\nexport async function runAudit(\n  config: ProjectConfig,\n  generatedFiles: string[]\n): Promise<void> {\n  if (!(await checkClaudeCodeAvailable())) {\n    console.warn('[ai-init] Skipping audit — Claude Code not available');\n    return;\n  }\n\n  const filesList = generatedFiles.map(f => `  - ${f}`).join('\\n');\n  const prompt = AUDIT_PROMPT_TEMPLATE.replace('{{GENERATED_FILES}}', filesList);\n\n  console.log('[ai-init] Running AI-powered audit of generated files...');\n\n  let auditOutput: string;\n  try {\n    auditOutput = await run('claude', ['--headless', '--print', prompt], config.projectRoot);\n  } catch (err) {\n    console.warn('[ai-init] Audit failed — review generated files manually');\n    console.warn(err);\n    return;\n  }\n\n  // Save audit results\n  const auditPath = path.join(config.projectRoot, '.ai-init-audit.md');\n  await fs.writeFile(auditPath, `# AI Init Audit Results\\n\\n${auditOutput}\\n`, 'utf8');\n  \n  console.log('\\n--- AUDIT RESULTS ---');\n  console.log(auditOutput);\n  console.log('\\nAudit saved to: .ai-init-audit.md');\n}\n```\n\nAdd `.ai-init-audit.md` to `.gitignore`.\n\n**Graceful degradation:**\n- Claude not installed → skip with message\n- No API credentials → skip with message\n- Audit errors → catch, warn, continue\n- Never block wizard completion",
         "testStrategy": "Unit test `test/generators/audit.test.ts`:\n1. `checkClaudeCodeAvailable()` returns false when 'claude' not on PATH (mock commandExists)\n2. `runAudit()` with unavailable Claude → prints warning, does NOT throw\n3. `runAudit()` with audit error → catches error, does NOT propagate\n4. Audit prompt template contains all 7 audit checklist items\n5. `{{GENERATED_FILES}}` placeholder is replaced with actual file list",
         "priority": "medium",
-        "dependencies": [
-          "4",
-          "13"
-        ],
+        "dependencies": ["4", "13"],
         "status": "pending",
         "subtasks": []
       },
@@ -354,11 +344,7 @@
         "details": "Create `src/cli.ts`:\n\n```typescript\n#!/usr/bin/env node\nimport meow from 'meow';\nimport path from 'node:path';\nimport { runWizard } from './wizard.js';\nimport { runOnCreate } from './phases/on-create.js';\nimport { runPostCreate } from './phases/post-create.js';\nimport { runPostStart } from './phases/post-start.js';\nimport { runAudit, checkClaudeCodeAvailable, installClaudeCode } from './audit.js';\n\nconst cli = meow(`\n  Usage\n    $ ai-init [command] [options]\n\n  Commands\n    (none)          Interactive setup wizard\n    on-create       Heavy installs — run once during Codespace creation\n    post-create     Project scaffolding — run after Codespace creation\n    post-start      Per-session setup — run on every container start\n\n  Options\n    --non-interactive   Skip prompts, use environment variables\n    --no-audit          Skip the Claude Code audit step\n    --overwrite         Overwrite existing files (default: true)\n    --version           Show version\n    --help              Show help\n\n  Environment Variables\n    SETUP_AI_NONINTERACTIVE=1   Same as --non-interactive\n    SETUP_AI_MCPS               Comma-separated MCP names\n    SETUP_AI_TRACKER            taskmaster | beads | markdown\n    SETUP_AI_ARCH               monolith | 2-tier | 3-tier | microservices | skip\n    SETUP_AI_SKIP_AUDIT=1       Skip audit step\n    SETUP_AI_AGENT_TEAMS=1      Enable agent teams\n`, {\n  importMeta: import.meta,\n  flags: {\n    nonInteractive: { type: 'boolean', default: false },\n    audit: { type: 'boolean', default: true },\n    overwrite: { type: 'boolean', default: true },\n  },\n});\n\nasync function main() {\n  const [command] = cli.input;\n  const projectRoot = process.cwd();\n\n  switch (command) {\n    case 'on-create':\n      await runOnCreate();\n      break;\n\n    case 'post-create': {\n      // In lifecycle mode, use env vars for config\n      process.env.SETUP_AI_NONINTERACTIVE = '1';\n      const config = await runWizard(projectRoot);\n      const written = await runPostCreate(config, cli.flags.overwrite);\n      console.log(`[ai-init] Generated ${written.length} files.`);\n      break;\n    }\n\n    case 'post-start':\n      // Import config from .setup-ai-mcps or use defaults\n      // Run per-session setup\n      break;\n\n    default: {\n      // Interactive wizard (default command)\n      // Step 0: Ensure Claude Code is installed\n      if (!(await checkClaudeCodeAvailable())) {\n        await installClaudeCode().catch(() => {\n          console.warn('[ai-init] Could not install Claude Code — audit will be skipped');\n        });\n      }\n\n      const config = await runWizard(projectRoot);\n      const written = await runPostCreate(config, cli.flags.overwrite);\n      config.generatedFiles = written;\n\n      console.log(`\\n[ai-init] Generated ${written.length} files:`);\n      written.forEach(f => console.log(`  ✓ ${f}`));\n\n      if (config.runAudit && cli.flags.audit) {\n        await runAudit(config, written);\n      }\n\n      console.log('\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');\n      console.log('  Setup complete! Next steps:');\n      console.log(`  1. Fill in docs/prd.md with your project requirements`);\n      console.log(`  2. Run 'task-master parse-prd docs/prd.md' to generate tasks`);\n      console.log(`  3. Open Claude Code and run /dev-next to start building`);\n      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n');\n    }\n  }\n}\n\nmain().catch(err => {\n  console.error('[ai-init] Fatal error:', err.message);\n  process.exit(1);\n});\n```\n\nAdd shebang `#!/usr/bin/env node` at the top. The `bin` field in package.json points to `dist/cli.js`.",
         "testStrategy": "Integration test `test/integration/cli.test.ts` — run the compiled CLI in a temp directory:\n1. `ai-init --non-interactive` in a temp dir creates expected files without prompting\n2. `ai-init on-create` doesn't throw (skips installs if tools already present)\n3. `ai-init --help` prints usage info\n4. `ai-init --version` prints version from package.json\n5. With `SETUP_AI_NONINTERACTIVE=1 SETUP_AI_TRACKER=markdown`, generated CLAUDE.md contains TASKS.md reference",
         "priority": "high",
-        "dependencies": [
-          "13",
-          "14",
-          "15"
-        ],
+        "dependencies": ["13", "14", "15"],
         "status": "pending",
         "subtasks": []
       },
@@ -369,9 +355,7 @@
         "details": "Create `install.sh`:\n\n```bash\n#!/usr/bin/env bash\nset -euo pipefail\n\n# ============================================================\n# AI Helper Tools — Bootstrap Installer\n# Usage: curl -fsSL https://raw.githubusercontent.com/.../install.sh | bash\n# ============================================================\n\nAI_HELPER_HOME=\"${AI_HELPER_HOME:-$HOME/.ai-helper-tools}\"\nBIN_DIR=\"${HOME}/.local/bin\"\nREPO_URL=\"https://github.com/potgieterdl/ai-helper-tools.git\"\nNODE_MIN_VERSION=20\n\necho \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"\necho \"  AI Helper Tools — Installer\"\necho \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"\n\n# 1. Check for Node.js ≥ 20, install via fnm if missing\nensure_node() {\n  if command -v node &>/dev/null; then\n    local version\n    version=$(node --version | sed 's/v//' | cut -d. -f1)\n    if [ \"$version\" -ge \"$NODE_MIN_VERSION\" ]; then\n      echo \"✓ Node.js $(node --version) found\"\n      return 0\n    fi\n    echo \"Node.js $(node --version) is too old (need >= ${NODE_MIN_VERSION}). Installing newer version via fnm...\"\n  else\n    echo \"Node.js not found. Installing via fnm...\"\n  fi\n\n  # Install fnm\n  curl -fsSL https://fnm.vercel.app/install | bash\n  export PATH=\"$HOME/.local/share/fnm:$PATH\"\n  eval \"$(fnm env)\"\n  fnm install \"$NODE_MIN_VERSION\"\n  fnm use \"$NODE_MIN_VERSION\"\n  fnm default \"$NODE_MIN_VERSION\"\n  echo \"✓ Node.js $(node --version) installed via fnm\"\n}\n\n# 2. Clone or update the repository\nensure_repo() {\n  if [ -d \"$AI_HELPER_HOME/.git\" ]; then\n    echo \"Updating ai-helper-tools...\"\n    git -C \"$AI_HELPER_HOME\" pull --ff-only\n  else\n    echo \"Cloning ai-helper-tools to $AI_HELPER_HOME...\"\n    git clone \"$REPO_URL\" \"$AI_HELPER_HOME\"\n  fi\n  echo \"✓ Repository ready at $AI_HELPER_HOME\"\n}\n\n# 3. Install dependencies\ninstall_deps() {\n  echo \"Installing dependencies...\"\n  npm ci --prefix \"$AI_HELPER_HOME\" --silent\n  npm run build --prefix \"$AI_HELPER_HOME\" --silent\n  echo \"✓ Dependencies installed\"\n}\n\n# 4. Symlink ai-init to PATH\nsetup_bin() {\n  mkdir -p \"$BIN_DIR\"\n  ln -sf \"$AI_HELPER_HOME/dist/cli.js\" \"$BIN_DIR/ai-init\"\n  chmod +x \"$AI_HELPER_HOME/dist/cli.js\"\n  echo \"✓ ai-init symlinked to $BIN_DIR/ai-init\"\n\n  # Ensure BIN_DIR is in PATH\n  if [[ \":$PATH:\" != *\":$BIN_DIR:\"* ]]; then\n    echo \"\"\n    echo \"Add this to your shell config (~/.bashrc or ~/.zshrc):\"\n    echo \"  export PATH=\\\"$BIN_DIR:\\$PATH\\\"\"\n  fi\n}\n\nensure_node\nensure_repo\ninstall_deps\nsetup_bin\n\necho \"\"\necho \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"\necho \"  Installation complete!\"\necho \"  Run 'ai-init' in any project directory to get started.\"\necho \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"\n```\n\nMake executable: `chmod +x install.sh`\n\nAdd `.gitignore` entries: `dist/`, `node_modules/`, `.ai-init-audit.md`",
         "testStrategy": "Manual test in a clean environment: run `bash install.sh` with Node.js absent (using Docker `node:alpine` with Node removed), verify fnm is installed and Node 20 is available after script runs. Verify `ai-init --version` works after install. Automated: test that `install.sh` is executable and contains `fnm.vercel.app/install`, `npm ci`, and symlink logic.",
         "priority": "high",
-        "dependencies": [
-          "16"
-        ],
+        "dependencies": ["16"],
         "status": "pending",
         "subtasks": []
       },
@@ -382,9 +366,7 @@
         "details": "Create `src/generators/agent-teams.ts`:\n\n```typescript\nimport fs from 'node:fs/promises';\nimport path from 'node:path';\nimport os from 'node:os';\nimport { ProjectConfig, FileDescriptor } from '../types.js';\n\nexport async function configureAgentTeams(\n  config: ProjectConfig\n): Promise<void> {\n  if (!config.agentTeamsEnabled) return;\n\n  // Update ~/.claude/settings.json (user-level setting)\n  const claudeSettingsPath = path.join(os.homedir(), '.claude', 'settings.json');\n  \n  let existing: Record<string, unknown> = {};\n  try {\n    const content = await fs.readFile(claudeSettingsPath, 'utf8');\n    existing = JSON.parse(content);\n  } catch {\n    // File doesn't exist — start fresh\n  }\n\n  const merged = {\n    ...existing,\n    env: {\n      ...((existing.env as Record<string, string>) ?? {}),\n      CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',\n    },\n  };\n\n  await fs.mkdir(path.dirname(claudeSettingsPath), { recursive: true });\n  await fs.writeFile(claudeSettingsPath, JSON.stringify(merged, null, 2), 'utf8');\n  console.log('[ai-init] Agent teams mode enabled in ~/.claude/settings.json');\n}\n```\n\nThe `agent-teams.md` rule is handled by the rules generator (Task 10) when `agentTeamsEnabled: true`. This function handles only the user-level settings file update, which cannot go through the normal `writeFiles()` mechanism (it's outside the project root).\n\n**Integration in post-create:** Call `configureAgentTeams(config)` at the end of `runPostCreate()` after all file generation.",
         "testStrategy": "Unit test `test/generators/agent-teams.test.ts`:\n1. With `agentTeamsEnabled: false` → `configureAgentTeams()` returns without writing any files\n2. With `agentTeamsEnabled: true` and no existing settings file → creates file with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1'`\n3. With existing settings file containing other keys → merges without overwriting existing keys\n4. With existing `env` block → merges the new key into existing env block",
         "priority": "low",
-        "dependencies": [
-          "10"
-        ],
+        "dependencies": ["10"],
         "status": "pending",
         "subtasks": []
       },
@@ -395,10 +377,7 @@
         "details": "Create `test/integration/full-run.test.ts`:\n\n```typescript\nimport { describe, it, expect, beforeEach, afterEach } from 'vitest';\nimport fs from 'node:fs/promises';\nimport path from 'node:path';\nimport os from 'node:os';\nimport { execFile } from 'node:child_process';\nimport { promisify } from 'node:util';\n\nconst execFileAsync = promisify(execFile);\nconst CLI_PATH = path.resolve('./dist/cli.js');\n\nasync function runCli(\n  args: string[],\n  cwd: string,\n  env: Record<string, string> = {}\n): Promise<{ stdout: string; stderr: string }> {\n  return execFileAsync('node', [CLI_PATH, ...args], {\n    cwd,\n    env: { ...process.env, ...env },\n  });\n}\n\ndescribe('ai-init integration', () => {\n  let tempDir: string;\n\n  beforeEach(async () => {\n    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ai-init-test-'));\n  });\n\n  afterEach(async () => {\n    await fs.rm(tempDir, { recursive: true, force: true });\n  });\n\n  it('smoke: --non-interactive creates core files', async () => {\n    await runCli([], tempDir, {\n      SETUP_AI_NONINTERACTIVE: '1',\n      SETUP_AI_MCPS: 'taskmaster',\n      SETUP_AI_TRACKER: 'taskmaster',\n      SETUP_AI_SKIP_AUDIT: '1',\n    });\n\n    // Verify core files\n    const coreFiles = ['.mcp.json', '.vscode/mcp.json', 'CLAUDE.md', 'CLAUDE_MCP.md'];\n    for (const file of coreFiles) {\n      await expect(fs.access(path.join(tempDir, file))).resolves.toBeUndefined();\n    }\n  });\n\n  it('demo: task master tracker config is accurate', async () => {\n    await runCli([], tempDir, {\n      SETUP_AI_NONINTERACTIVE: '1',\n      SETUP_AI_TRACKER: 'taskmaster',\n      SETUP_AI_SKIP_AUDIT: '1',\n    });\n\n    const claudeMd = await fs.readFile(path.join(tempDir, 'CLAUDE.md'), 'utf8');\n    expect(claudeMd).toContain('task-master next');\n    expect(claudeMd).toContain('@./.taskmaster/CLAUDE.md');\n  });\n\n  it('demo: beads tracker config is accurate', async () => {\n    await runCli([], tempDir, {\n      SETUP_AI_NONINTERACTIVE: '1',\n      SETUP_AI_TRACKER: 'beads',\n      SETUP_AI_MCPS: 'beads',\n      SETUP_AI_SKIP_AUDIT: '1',\n    });\n\n    const claudeMd = await fs.readFile(path.join(tempDir, 'CLAUDE.md'), 'utf8');\n    expect(claudeMd).toContain('bd sync');\n    expect(claudeMd).toContain('beads_ready');\n  });\n\n  it('demo: doc generation creates all template files', async () => {\n    await runCli([], tempDir, {\n      SETUP_AI_NONINTERACTIVE: '1',\n      SETUP_AI_SKIP_AUDIT: '1',\n    });\n\n    const docFiles = ['docs/doc_format.md', 'docs/prd.md', 'docs/architecture.md',\n      'docs/testing_strategy.md', 'docs/onboarding.md', 'docs/cuj.md'];\n    for (const file of docFiles) {\n      await expect(fs.access(path.join(tempDir, file))).resolves.toBeUndefined();\n    }\n  });\n\n  it('demo: rules generation includes testing.md with integration-first philosophy', async () => {\n    await runCli([], tempDir, {\n      SETUP_AI_NONINTERACTIVE: '1',\n      SETUP_AI_SKIP_AUDIT: '1',\n    });\n\n    const testingRule = await fs.readFile(\n      path.join(tempDir, '.claude/rules/testing.md'),\n      'utf8'\n    );\n    expect(testingRule).toContain('Integration tests');\n    expect(testingRule).toContain('Demo checkpoints');\n    expect(testingRule).toContain('demo:');\n  });\n\n  it('demo: idempotency — running twice produces same result', async () => {\n    const env = { SETUP_AI_NONINTERACTIVE: '1', SETUP_AI_SKIP_AUDIT: '1' };\n    await runCli([], tempDir, env);\n    const firstRun = await fs.readFile(path.join(tempDir, 'CLAUDE.md'), 'utf8');\n    await runCli([], tempDir, env);\n    const secondRun = await fs.readFile(path.join(tempDir, 'CLAUDE.md'), 'utf8');\n    expect(firstRun).toBe(secondRun);\n  });\n\n  it('smoke: mcp.json is valid JSON with correct schema', async () => {\n    await runCli([], tempDir, {\n      SETUP_AI_NONINTERACTIVE: '1',\n      SETUP_AI_MCPS: 'taskmaster,context7',\n      SETUP_AI_SKIP_AUDIT: '1',\n    });\n\n    const mcpJson = await fs.readFile(path.join(tempDir, '.mcp.json'), 'utf8');\n    const parsed = JSON.parse(mcpJson);\n    expect(parsed).toHaveProperty('mcpServers');\n    expect(parsed.mcpServers).toHaveProperty('taskmaster-ai');\n    expect(parsed.mcpServers).toHaveProperty('context7');\n  });\n});\n```\n\nEach test:\n1. Creates fresh temp dir\n2. Runs CLI with env overrides\n3. Asserts specific outputs\n4. Cleans up in afterEach\n\nThis follows the demo-test naming pattern (`smoke:`, `demo:`) from the testing philosophy.",
         "testStrategy": "These tests ARE the test strategy — they are integration tests that prove the tool works end-to-end. Run with `npm test`. All tests must pass before any task is marked done. Verify test coverage includes at least: MCP generation, CLAUDE.md content, doc scaffolding, rules generation, and idempotency.",
         "priority": "high",
-        "dependencies": [
-          "16",
-          "17"
-        ],
+        "dependencies": ["16", "17"],
         "status": "pending",
         "subtasks": []
       },
@@ -409,9 +388,7 @@
         "details": "Create `.eslintrc.cjs`:\n```javascript\nmodule.exports = {\n  root: true,\n  parser: '@typescript-eslint/parser',\n  plugins: ['@typescript-eslint'],\n  extends: [\n    'eslint:recommended',\n    'plugin:@typescript-eslint/recommended',\n  ],\n  env: { node: true, es2022: true },\n  rules: {\n    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],\n    '@typescript-eslint/explicit-module-boundary-types': 'off',\n    'no-console': 'off',\n  },\n};\n```\n\nCreate `.prettierrc`:\n```json\n{\n  \"semi\": true,\n  \"singleQuote\": true,\n  \"trailingComma\": \"es5\",\n  \"printWidth\": 100,\n  \"tabWidth\": 2\n}\n```\n\nCreate `.prettierignore`:\n```\ndist/\nnode_modules/\ntemplates/\n```\n\nUpdate `package.json` scripts:\n```json\n{\n  \"scripts\": {\n    \"build\": \"tsc\",\n    \"dev\": \"tsx src/cli.ts\",\n    \"test\": \"vitest run\",\n    \"test:watch\": \"vitest\",\n    \"lint\": \"eslint src test --ext .ts --fix\",\n    \"lint:check\": \"eslint src test --ext .ts\",\n    \"typecheck\": \"tsc --noEmit\",\n    \"format\": \"prettier --write 'src/**/*.ts' 'test/**/*.ts'\",\n    \"format:check\": \"prettier --check 'src/**/*.ts' 'test/**/*.ts'\"\n  }\n}\n```\n\nUpdate `.gitignore` to include:\n```\ndist/\nnode_modules/\n.ai-init-audit.md\n*.js.map\n```\n\nVerify the build pipeline: `npm run build` produces `dist/cli.js` with shebang, `npm run lint` passes on all source files, `npm run typecheck` shows zero errors.",
         "testStrategy": "Verify all pipeline commands exit with code 0 on a clean checkout: `npm run format:check`, `npm run lint:check`, `npm run typecheck`, `npm run build`. The CI gate: run all four commands sequentially and fail if any returns non-zero. Also verify that `dist/cli.js` exists after build and the shebang `#!/usr/bin/env node` is present on line 1.",
         "priority": "high",
-        "dependencies": [
-          "1"
-        ],
+        "dependencies": ["1"],
         "status": "pending",
         "subtasks": []
       },
@@ -422,16 +399,7 @@
         "details": "Create the following test files:\n\n**`test/generators/mcp-json.test.ts`** (per Task 7 test strategy)\n\n**`test/generators/claude-md.test.ts`** (per Task 8 test strategy)\n\n**`test/generators/docs.test.ts`** (per Task 9 test strategy)\n\n**`test/generators/rules.test.ts`** (per Task 10 test strategy)\n\n**`test/generators/hooks.test.ts`** (per Task 10 test strategy)\n\n**`test/generators/devcontainer.test.ts`** (per Task 11 test strategy)\n\n**`test/generators/commands.test.ts`** (per Task 12 test strategy)\n\nEach test file follows this pattern:\n```typescript\nimport { describe, it, expect } from 'vitest';\nimport { generateMcpJson } from '../../src/generators/mcp-json.js';\nimport { defaultConfig } from '../../src/defaults.js';\n\ndescribe('generateMcpJson', () => {\n  it('demo: taskmaster config uses correct root key for Claude Code', () => {\n    const config = { ...defaultConfig('/tmp/test'), selectedMcps: ['taskmaster'] };\n    const files = generateMcpJson(config);\n    const mcpFile = files.find(f => f.path === '.mcp.json')!;\n    const parsed = JSON.parse(mcpFile.content);\n    expect(parsed).toHaveProperty('mcpServers');\n    expect(parsed.mcpServers).toHaveProperty('taskmaster-ai');\n  });\n\n  it('demo: vscode config uses correct root key for VS Code', () => {\n    const config = { ...defaultConfig('/tmp/test'), selectedMcps: ['taskmaster'] };\n    const files = generateMcpJson(config);\n    const vsFile = files.find(f => f.path === '.vscode/mcp.json')!;\n    const parsed = JSON.parse(vsFile.content);\n    expect(parsed).toHaveProperty('servers');\n    expect(parsed.servers['taskmaster-ai']).toHaveProperty('cwd');\n  });\n});\n```\n\nKey requirement: Every test uses the `smoke:` or `demo:` naming convention and tests real behavior (JSON parsing, content matching, file counts) — no trivial assertions like `expect(true).toBe(true)`.\n\nTotal test count target: ≥ 40 unit tests across all generators.",
         "testStrategy": "Run `npm test` — all 40+ unit tests must pass. Run `npm run typecheck` — zero type errors in test files. Verify test output shows individual test names matching `smoke:` or `demo:` naming convention. Coverage report (if configured) should show > 80% branch coverage on generator files.",
         "priority": "high",
-        "dependencies": [
-          "7",
-          "8",
-          "9",
-          "10",
-          "11",
-          "12",
-          "19",
-          "20"
-        ],
+        "dependencies": ["7", "8", "9", "10", "11", "12", "19", "20"],
         "status": "pending",
         "subtasks": []
       },
@@ -442,11 +410,7 @@
         "details": "Audit `setup-ai.sh` against the TypeScript implementation:\n\n**Bash → TypeScript function mapping:**\n| Bash function | TypeScript equivalent |\n|---|---|\n| `select_mcps()` | `wizard.ts` Step 1 + env var handling |\n| `write_mcp_json()` | `generators/mcp-json.ts:generateMcpJson()` |\n| `write_claude_md()` | `generators/claude-md.ts:generateClaudeMd()` |\n| `write_devcontainer_json()` | `generators/devcontainer.ts:generateDevcontainer()` |\n| `phase_on_create()` | `phases/on-create.ts:runOnCreate()` |\n| `phase_post_create()` | `phases/post-create.ts:runPostCreate()` |\n| `phase_post_start()` | `phases/post-start.ts:runPostStart()` |\n| Interactive MCP menu | `wizard.ts` `@inquirer/prompts` checkbox |\n| `.setup-ai-mcps` cache file | Read in `post-start.ts` for session context |\n| Welcome banner + task count | `phases/post-start.ts:runPostStart()` |\n| Shell config injection (TMPDIR) | `phases/on-create.ts` |\n| Pre-commit hook generation | `generators/hooks.ts:generateHooks()` |\n\n**Compatibility verification:**\n1. Existing `.devcontainer/devcontainer.json` calls `setup-ai.sh on-create|post-create|post-start` — update these to `ai-init on-create|post-create|post-start`\n2. Existing `.setup-ai-mcps` file (contains `taskmaster`) — `post-start.ts` should read this for context\n3. CLAUDE.md regeneration — the `<!-- SETUP-AI-MANAGED -->` header is preserved\n4. MCP config parity — verify the TypeScript-generated `.mcp.json` matches the bash-generated one for identical inputs\n\n**Transition path:** \n- Keep `setup-ai.sh` intact during development (it's the reference implementation)\n- Add a deprecation notice to `setup-ai.sh` pointing to `ai-init`\n- Update `.devcontainer/devcontainer.json` to use `ai-init` once tests pass",
         "testStrategy": "Comparison test: run `setup-ai.sh` (with `SETUP_AI_NONINTERACTIVE=1 SETUP_AI_MCPS=taskmaster`) in one temp dir, run `ai-init --non-interactive` in another temp dir with equivalent settings. Compare `.mcp.json`, `CLAUDE.md`, and `.devcontainer/devcontainer.json` — they should be functionally equivalent (same structure, same servers, same tracker instructions). Any differences must be intentional improvements (documented in test comments).",
         "priority": "medium",
-        "dependencies": [
-          "16",
-          "17",
-          "19"
-        ],
+        "dependencies": ["16", "17", "19"],
         "status": "pending",
         "subtasks": []
       },
@@ -457,22 +421,17 @@
         "details": "Update `README.md` with:\n\n**Header section:**\n- One-line description\n- Badges (license, node version)\n- Single-line install command prominently displayed:\n  ```bash\n  curl -fsSL https://raw.githubusercontent.com/potgieterdl/ai-helper-tools/main/install.sh | bash\n  ```\n\n**Usage section:**\n```bash\ncd my-project\nai-init                    # Interactive wizard\nai-init --non-interactive  # Env-var driven\nai-init on-create          # Codespace: heavy installs\nai-init post-create        # Codespace: project scaffolding\nai-init post-start         # Codespace: per-session setup\n```\n\n**What gets generated table:**\n| File/Directory | Purpose |\n|---|---|\n| `CLAUDE.md` | Agent instructions (auto-loaded by Claude Code) |\n| `.mcp.json` | MCP servers for Claude Code CLI |\n| `.vscode/mcp.json` | MCP servers for VS Code / Copilot |\n| `docs/` | Agent-optimized project documentation |\n| `.claude/rules/` | Path-scoped agent rules |\n| `.claude/skills/` | Keyword-activated agent knowledge |\n| `.claude/hooks/` | Pre-commit quality gate |\n| `.claude/commands/` | `/dev-next` and `/review` slash commands |\n| `.devcontainer/devcontainer.json` | Codespace lifecycle hooks |\n\n**Environment variables table** (all SETUP_AI_* vars)\n\n**Task tracker comparison table** (Task Master vs Beads vs Markdown)\n\n**Development section:**\n```bash\ngit clone ...\nnpm ci\nnpm run build\nnpm test\nnpm run dev -- --help\n```\n\nKeep README under 200 lines following the project's own doc_format.md standard.",
         "testStrategy": "Verify README.md contains: install curl command, all subcommand examples, the generated files table, environment variable reference. Verify README.md is under 200 lines. Verify all links in README are relative and valid (no broken anchors). Run `markdownlint README.md` if available.",
         "priority": "medium",
-        "dependencies": [
-          "17",
-          "19"
-        ],
+        "dependencies": ["17", "19"],
         "status": "pending",
         "subtasks": []
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T19:50:46.363Z",
+      "lastModified": "2026-02-17T19:54:53.872Z",
       "taskCount": 23,
-      "completedCount": 2,
-      "tags": [
-        "master"
-      ]
+      "completedCount": 3,
+      "tags": ["master"]
     }
   }
 }
