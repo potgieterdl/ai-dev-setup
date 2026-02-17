@@ -2,6 +2,7 @@
 
 import { runOnCreate, runPostCreate, runPostStart } from "./phases/index.js";
 import { runWizard } from "./wizard.js";
+import { runAudit } from "./audit.js";
 
 const VERSION = "0.1.0";
 
@@ -31,6 +32,9 @@ async function main(): Promise<void> {
       // or with defaults if env vars aren't set
       const config = await runWizard(projectRoot);
       await runPostCreate(config);
+      if (config.runAudit) {
+        await runAudit(config, config.generatedFiles);
+      }
       break;
     }
 
@@ -45,6 +49,9 @@ async function main(): Promise<void> {
       process.env.SETUP_AI_NONINTERACTIVE = "1";
       const config = await runWizard(projectRoot);
       await runPostCreate(config);
+      if (config.runAudit) {
+        await runAudit(config, config.generatedFiles);
+      }
       break;
     }
 
@@ -52,6 +59,9 @@ async function main(): Promise<void> {
       // Default: interactive wizard (F6)
       const config = await runWizard(projectRoot);
       await runPostCreate(config);
+      if (config.runAudit) {
+        await runAudit(config, config.generatedFiles);
+      }
       break;
     }
   }

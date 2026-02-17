@@ -935,8 +935,78 @@
           "4",
           "13"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create src/audit.ts with checkClaudeCodeAvailable and installClaudeCode functions",
+            "description": "Implement the core module `src/audit.ts` with the `checkClaudeCodeAvailable()` and `installClaudeCode()` exported functions using the existing `commandExists` and `run` utilities from `src/utils.ts`.",
+            "dependencies": [],
+            "details": "Create `src/audit.ts` importing `fs` from `node:fs/promises`, `path` from `node:path`, `commandExists` and `run` from `./utils.js`, and `ProjectConfig` from `./types.js`. Implement `checkClaudeCodeAvailable(): Promise<boolean>` — calls `commandExists('claude')` first; if false returns false; otherwise calls `run('claude', ['--version'])` and returns true, catching any error to return false. Implement `installClaudeCode(): Promise<void>` — logs `[ai-init] Installing Claude Code...` then calls `run('npm', ['install', '-g', '@anthropic-ai/claude-code'])`. Define the `AUDIT_PROMPT_TEMPLATE` constant with the full audit prompt containing the `{{GENERATED_FILES}}` placeholder as specified in the task details. All three must be exported. Follow the same import pattern as other source files in the project (e.g., `src/generators/commands.ts`).",
+            "status": "done",
+            "testStrategy": "Unit test in `test/generators/audit.test.ts`: mock `commandExists` to return false and verify `checkClaudeCodeAvailable()` returns false without calling `run`; mock `commandExists` to return true and mock `run` to succeed and verify returns true; mock `run` to throw and verify returns false.",
+            "updatedAt": "2026-02-17T22:14:11.274Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement runAudit function in src/audit.ts with graceful degradation",
+            "description": "Add the `runAudit(config: ProjectConfig, generatedFiles: string[]): Promise<void>` exported function to `src/audit.ts`, implementing all graceful-degradation paths: Claude not available, run error, and the happy path that saves the audit output to `.ai-init-audit.md`.",
+            "dependencies": [
+              1
+            ],
+            "details": "Inside `runAudit`: (1) Call `checkClaudeCodeAvailable()`; if false, log `[ai-init] Skipping audit — Claude Code not available` and return. (2) Build `filesList` by mapping `generatedFiles` to `  - ${f}` lines joined by `\\n`, substitute into `AUDIT_PROMPT_TEMPLATE` via `.replace('{{GENERATED_FILES}}', filesList)`. (3) Log `[ai-init] Running AI-powered audit of generated files...`. (4) Call `run('claude', ['--headless', '--print', prompt], config.projectRoot)` in a try/catch — on error, log `[ai-init] Audit failed — review generated files manually`, log the error, and return without throwing. (5) On success, compute `auditPath = path.join(config.projectRoot, '.ai-init-audit.md')`, write `# AI Init Audit Results\\n\\n${auditOutput}\\n` with `fs.writeFile`. (6) Log the audit output to stdout and log `Audit saved to: .ai-init-audit.md`. Follow the error handling pattern from `src/phases/post-create.ts`.",
+            "status": "done",
+            "testStrategy": "Unit tests: (1) `runAudit` with unavailable Claude prints warning and returns without throwing; (2) `runAudit` with `run` throwing catches the error and does NOT propagate; (3) `runAudit` happy path writes `.ai-init-audit.md` with correct header and content; (4) Audit prompt template has `{{GENERATED_FILES}}` replaced with the file list.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:14:16.891Z"
+          },
+          {
+            "id": 3,
+            "title": "Wire runAudit into post-create phase in src/phases/post-create.ts",
+            "description": "Update `src/phases/post-create.ts` to import `runAudit` from `../audit.js` and call it after `writeFiles()` when `config.runAudit` is true, passing `config` and the written file list.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "In `src/phases/post-create.ts`: add `import { runAudit } from '../audit.js';` alongside existing imports. After the existing `config.generatedFiles.push(...written)` line and the `console.log` for post-create complete, add a conditional block: `if (config.runAudit) { await runAudit(config, written); }`. This ensures the audit runs on the actual list of files written to disk (not the full `allFiles` array), and only when `config.runAudit` is true (the flag already exists in `ProjectConfig` and defaults to `true` in `src/defaults.ts`). The audit must never block wizard completion — its graceful degradation is already handled inside `runAudit`.",
+            "status": "done",
+            "testStrategy": "Integration test in `test/integration/phases.test.ts`: add a test case with `runAudit: false` to verify no `.ai-init-audit.md` is created and post-create still completes normally. Existing tests should continue to pass since `checkClaudeCodeAvailable()` will return false in the test environment (no `claude` binary on PATH).",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:15:04.521Z"
+          },
+          {
+            "id": 4,
+            "title": "Write unit tests for audit.ts in test/generators/audit.test.ts",
+            "description": "Create `test/generators/audit.test.ts` with comprehensive unit tests for all exported functions in `src/audit.ts`, using vitest's `vi.mock` to mock `commandExists` and `run` from `src/utils.ts`.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create `test/generators/audit.test.ts` following the pattern of `test/generators/commands.test.ts`. Import `describe`, `it`, `expect`, `vi`, `beforeEach`, `afterEach` from vitest. Use `vi.mock('../../src/utils.js', ...)` to mock `commandExists` and `run`. Tests to include: (1) `checkClaudeCodeAvailable()` returns false when `commandExists('claude')` returns false; (2) `checkClaudeCodeAvailable()` returns true when `commandExists` returns true and `run` succeeds; (3) `checkClaudeCodeAvailable()` returns false when `run` throws; (4) `runAudit()` with `commandExists` returning false logs warning and resolves without throwing; (5) `runAudit()` with `run` throwing catches error, logs warning, resolves without throwing, and does NOT write `.ai-init-audit.md`; (6) `runAudit()` happy path with `run` returning audit text — verify `fs.writeFile` is called with the correct path and content beginning with `# AI Init Audit Results`. Use `vi.spyOn(fs, 'writeFile')` or mock `node:fs/promises`. Also verify AUDIT_PROMPT_TEMPLATE substitution by checking the prompt passed to `run` contains the file list.",
+            "status": "done",
+            "testStrategy": "Run `npm test test/generators/audit.test.ts` — all test cases must pass. Run the full suite `npm test` to ensure no regressions in existing tests.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:15:58.629Z"
+          },
+          {
+            "id": 5,
+            "title": "Run quality gate checks and fix any issues",
+            "description": "Execute the mandatory pre-completion checklist: format, lint, type-check, build, and full test suite. Fix any failures discovered.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Run the following in order from the project root `/workspaces/ai-dev-setup`: (1) `npm run format` — fix any formatting issues in the new files; (2) `npm run lint` — fix all lint errors in `src/audit.ts` and `test/generators/audit.test.ts`; (3) `npm run typecheck` or `npx tsc --noEmit` — ensure `src/audit.ts` and its integration in `post-create.ts` have no TypeScript errors (verify `runAudit` signature matches `ProjectConfig` from `./types.js` and `run`/`commandExists` imports from `./utils.js`); (4) `npm run build` — verify the project compiles cleanly to `dist/`; (5) `npm test` — run the full test suite including the new `test/generators/audit.test.ts` and the integration test in `test/integration/phases.test.ts`. Confirm `.ai-init-audit.md` is already present in `.gitignore` (it is, at line 31). Fix any issues found and re-run from the failing step.",
+            "status": "done",
+            "testStrategy": "All five quality gate steps must exit with code 0. The new audit test file must contain at least 6 passing test cases. The integration phase tests must still pass with the new `runAudit` wiring (graceful degradation handles the no-claude-binary case in CI).",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:16:51.618Z"
+          }
+        ],
+        "updatedAt": "2026-02-17T22:16:51.618Z"
       },
       {
         "id": "16",
@@ -1123,9 +1193,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T22:07:53.245Z",
+      "lastModified": "2026-02-17T22:16:51.619Z",
       "taskCount": 23,
-      "completedCount": 15,
+      "completedCount": 16,
       "tags": [
         "master"
       ]
