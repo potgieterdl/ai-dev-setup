@@ -21,5 +21,9 @@ node_modules/
 *.sln
 *.sw?
 
+# Build output
+dist/
+*.tsbuildinfo
+
 # OS specific
 .DS_Store

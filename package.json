@@ -1,0 +1,32 @@
+{
+  "name": "ai-helper-tools",
+  "version": "0.1.0",
+  "description": "Bootstrap tool for AI-assisted development environments",
+  "type": "module",
+  "bin": {
+    "ai-init": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint --no-error-on-unmatched-pattern 'src/**/*.ts' 'test/**/*.ts'",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "meow": "latest",
+    "@inquirer/prompts": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "vitest": "latest",
+    "tsx": "latest",
+    "@types/node": "latest",
+    "eslint": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "prettier": "latest"
+  }
+}
