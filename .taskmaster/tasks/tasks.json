@@ -659,8 +659,77 @@
           "2",
           "4"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create src/generators/devcontainer.ts with core generator function",
+            "description": "Implement the pure synchronous `generateDevcontainer` function that builds the `.devcontainer/devcontainer.json` FileDescriptor with lifecycle hooks, VS Code extensions, secrets, and env vars.",
+            "dependencies": [],
+            "details": "Create `/workspaces/ai-dev-setup/src/generators/devcontainer.ts` following the same module structure as `mcp-json.ts` (pure function, no fs calls). Define the `DevcontainerConfig` interface locally. The function signature must be `export function generateDevcontainer(config: ProjectConfig): FileDescriptor[]`. Hard-code the base config: `image: 'mcr.microsoft.com/devcontainers/universal:2'`, `features: { 'ghcr.io/devcontainers/features/node:1': { version: '20' } }`, lifecycle commands `onCreateCommand: 'ai-init on-create'`, `postCreateCommand: 'ai-init post-create'`, `postStartCommand: 'ai-init post-start'`. Always include `GitHub.copilot` and `GitHub.copilot-chat` in `customizations.vscode.extensions`. Use `config.projectName` for the `name` field. Return exactly one `FileDescriptor` with `path: '.devcontainer/devcontainer.json'` and `content: JSON.stringify(devcontainer, null, 2)`.",
+            "status": "done",
+            "testStrategy": null,
+            "updatedAt": "2026-02-17T21:35:34.659Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Add MCP-driven secrets and containerEnv to devcontainer config",
+            "description": "Extend `generateDevcontainer` to dynamically append secrets and container environment variables for each selected MCP server that has env vars defined in the registry.",
+            "dependencies": [
+              1
+            ],
+            "details": "Import `getSelectedServers` from `../registry.js`. After building the base `DevcontainerConfig`, iterate `getSelectedServers(config.selectedMcps)` and for each server that has a non-empty `env` record, add an entry to `secrets` with `{ description: 'API key for <server.description>', documentationUrl: '' }` and add matching entries to both `containerEnv` and `remoteEnv` using `'${localEnv:VAR_NAME}'` syntax. Always include the base `ANTHROPIC_API_KEY` secret and env entry (already in the static config), so skip it when iterating to avoid duplication. This mirrors the pattern used in `mcp-json.ts` where `getSelectedServers` drives env generation. The function remains synchronous since `getSelectedServers` is a pure registry lookup.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:35:41.544Z"
+          },
+          {
+            "id": 3,
+            "title": "Write unit tests in test/generators/devcontainer.test.ts",
+            "description": "Create a comprehensive Vitest test file for `generateDevcontainer` covering output shape, lifecycle commands, MCP-driven secrets, and JSON validity.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create `/workspaces/ai-dev-setup/test/generators/devcontainer.test.ts` mirroring the style of `test/generators/mcp-json.test.ts`. Use `defaultConfig('/tmp/test-project')` via a `makeConfig` helper. Required test cases:\n1. Returns exactly one `FileDescriptor` with `path === '.devcontainer/devcontainer.json'`.\n2. Content is valid JSON (use `JSON.parse`).\n3. Parsed JSON has `onCreateCommand: 'ai-init on-create'`.\n4. Parsed JSON has `postCreateCommand: 'ai-init post-create'`.\n5. Parsed JSON has `postStartCommand: 'ai-init post-start'`.\n6. `name` equals `config.projectName`.\n7. `customizations.vscode.extensions` contains `'GitHub.copilot'` and `'GitHub.copilot-chat'`.\n8. When `selectedMcps` includes `'taskmaster'`, `secrets` includes `ANTHROPIC_API_KEY` and `PERPLEXITY_API_KEY` entries.\n9. `containerEnv.ANTHROPIC_API_KEY` equals `'${localEnv:ANTHROPIC_API_KEY}'`.\n10. Empty `selectedMcps` still produces the base `ANTHROPIC_API_KEY` secret.",
+            "status": "done",
+            "testStrategy": "Run `npm test -- test/generators/devcontainer.test.ts` — all cases must pass with zero failures.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:36:57.988Z"
+          },
+          {
+            "id": 4,
+            "title": "Export generateDevcontainer from the generators barrel",
+            "description": "Add `generateDevcontainer` to the centralized exports so other modules (orchestrator, phases) can import it from a single entry point.",
+            "dependencies": [
+              1
+            ],
+            "details": "Check whether `/workspaces/ai-dev-setup/src/generators/index.ts` exists. If it does, add `export { generateDevcontainer } from './devcontainer.js';` alongside existing exports. If it does not exist yet, create it and export all current generators: `generateMcpJson` from `./mcp-json.js`, `generateClaudeMd` from `./claude-md.js`, `generateDocs` from `./docs.js`, `generateRules` from `./rules.js`, `generateSkills` from `./skills.js`, `generateHooks` from `./hooks.js`, and `generateDevcontainer` from `./devcontainer.js`. Also check `src/index.ts` (the main entry) and add a re-export if generators are surfaced there. Follow existing import patterns using `.js` extensions for ESM compatibility.",
+            "status": "done",
+            "testStrategy": null,
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:36:08.942Z"
+          },
+          {
+            "id": 5,
+            "title": "Run full quality gate: format, lint, typecheck, build, and test",
+            "description": "Execute the mandatory pre-completion checklist — format, lint, typecheck, build, and full test suite — fixing any issues found.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Run the following commands in sequence from `/workspaces/ai-dev-setup` and fix any failures before proceeding to the next step:\n1. `npm run format` — prettify all changed files.\n2. `npm run lint` (or `npx eslint . --fix`) — fix all lint errors.\n3. `npm run typecheck` (or `npx tsc --noEmit`) — ensure zero TypeScript errors; pay attention to the `DevcontainerConfig` interface shape and any missing `?` on optional fields.\n4. `npm run build` — verify the project compiles cleanly.\n5. `npm test` — run the full test suite and confirm all tests pass, including the new `devcontainer.test.ts`.\nIf any step fails, fix the root cause and re-run from that step. Log findings to the subtask via `update_subtask`.",
+            "status": "done",
+            "testStrategy": "All five commands must exit with code 0. The `devcontainer.test.ts` suite must show all tests as passing in the `npm test` output.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T21:38:16.760Z"
+          }
+        ],
+        "updatedAt": "2026-02-17T21:38:16.760Z"
       },
       {
         "id": "12",
@@ -908,9 +977,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T21:28:51.187Z",
+      "lastModified": "2026-02-17T21:38:16.761Z",
       "taskCount": 23,
-      "completedCount": 11,
+      "completedCount": 12,
       "tags": [
         "master"
       ]
