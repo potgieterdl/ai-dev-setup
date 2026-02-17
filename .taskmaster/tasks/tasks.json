@@ -1122,8 +1122,112 @@
           "16",
           "17"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create test/integration/full-run.test.ts with helper infrastructure",
+            "description": "Set up the integration test file skeleton with shared helper functions, temp directory lifecycle hooks, and the runCli() wrapper that invokes dist/cli.js via execFile.",
+            "dependencies": [],
+            "details": "Create `test/integration/full-run.test.ts`. Import `describe`, `it`, `expect`, `beforeEach`, `afterEach` from vitest; import `fs` from `node:fs/promises`, `path` from `node:path`, `os` from `node:os`, `execFile` from `node:child_process`, `promisify` from `node:util`. Define `CLI_PATH = path.resolve('./dist/cli.js')`. Implement `runCli(args, cwd, env)` that calls `execFileAsync('node', [CLI_PATH, ...args], { cwd, env: { ...process.env, ...env } })` and returns `{ stdout, stderr }`. Add top-level `let tempDir: string` with `beforeEach` creating a temp dir via `fs.mkdtemp(path.join(os.tmpdir(), 'ai-init-test-'))` and `afterEach` cleaning it up via `fs.rm(tempDir, { recursive: true, force: true })`. Wrap all test cases in a single `describe('ai-init integration', ...)` block. Ensure the file is picked up by the existing vitest pattern `test/**/*.test.ts`.",
+            "status": "done",
+            "testStrategy": "Run `npm test` after creating the file skeleton — vitest should discover the file and pass (tests are stubs at this stage). Confirm `test/integration/full-run.test.ts` appears in the test run output.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:41:45.262Z"
+          },
+          {
+            "id": 2,
+            "title": "Add smoke test: non-interactive mode generates core files",
+            "description": "Write the first test that runs the CLI in fully non-interactive mode and asserts that the four always-generated core files exist on disk in the temp directory.",
+            "dependencies": [
+              1
+            ],
+            "details": "Inside the `describe` block from subtask 1, add:\n```typescript\nit('smoke: --non-interactive creates core files', async () => {\n  await runCli([], tempDir, {\n    SETUP_AI_NONINTERACTIVE: '1',\n    SETUP_AI_MCPS: 'taskmaster',\n    SETUP_AI_TRACKER: 'taskmaster',\n    SETUP_AI_SKIP_AUDIT: '1',\n  });\n  const coreFiles = ['.mcp.json', '.vscode/mcp.json', 'CLAUDE.md', 'CLAUDE_MCP.md'];\n  for (const file of coreFiles) {\n    await expect(fs.access(path.join(tempDir, file))).resolves.toBeUndefined();\n  }\n});\n```\nThis test invokes the default wizard code path (no sub-command) with env overrides. `SETUP_AI_SKIP_AUDIT=1` prevents Claude Code audit from running. Requires `dist/cli.js` to exist (built beforehand). Ensure `npm run build` runs before the test suite to produce the dist artifact; update `package.json` test script to `\"tsc && vitest run\"` or document that `npm run build && npm test` is the required flow.",
+            "status": "done",
+            "testStrategy": "Run `npm run build && npm test`. The smoke test should pass and all four core files must be found in the temp directory.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:41:50.589Z"
+          },
+          {
+            "id": 3,
+            "title": "Add MCP configuration tests (valid JSON schema, multiple servers)",
+            "description": "Write tests that verify .mcp.json and .vscode/mcp.json are valid JSON, contain the expected `mcpServers` property, and include all requested MCP servers when SETUP_AI_MCPS lists multiple values.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add two tests:\n1. `it('smoke: mcp.json is valid JSON with correct schema', ...)` — runs CLI with `SETUP_AI_MCPS: 'taskmaster,context7'`, reads `.mcp.json`, calls `JSON.parse()`, asserts `parsed.mcpServers` exists, `parsed.mcpServers['taskmaster-ai']` exists, and `parsed.mcpServers['context7']` exists.\n2. `it('smoke: .vscode/mcp.json mirrors .mcp.json structure', ...)` — reads `.vscode/mcp.json` and verifies it is also valid JSON with `mcpServers` property, confirming both output paths are written.\nFor both tests use env: `{ SETUP_AI_NONINTERACTIVE: '1', SETUP_AI_SKIP_AUDIT: '1', SETUP_AI_MCPS: 'taskmaster,context7' }`. Refer to `src/registry.ts` for canonical MCP server IDs (e.g., `taskmaster-ai`, `context7`).",
+            "status": "done",
+            "testStrategy": "Run `npm run build && npm test`. Both MCP tests must pass; JSON.parse must not throw, and all required properties must be present.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:41:55.916Z"
+          },
+          {
+            "id": 4,
+            "title": "Add task tracker content tests (taskmaster and beads)",
+            "description": "Write demo-labelled tests that verify the generated CLAUDE.md contains tracker-specific content depending on the SETUP_AI_TRACKER env variable.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add two tests following the `demo:` naming convention:\n1. `it('demo: task master tracker config is accurate', ...)` — env `{ SETUP_AI_NONINTERACTIVE: '1', SETUP_AI_TRACKER: 'taskmaster', SETUP_AI_SKIP_AUDIT: '1' }`. Reads `CLAUDE.md` as utf8 and asserts it contains `'task-master next'` and `'@./.taskmaster/CLAUDE.md'`.\n2. `it('demo: beads tracker config is accurate', ...)` — env `{ SETUP_AI_NONINTERACTIVE: '1', SETUP_AI_TRACKER: 'beads', SETUP_AI_MCPS: 'beads', SETUP_AI_SKIP_AUDIT: '1' }`. Reads `CLAUDE.md` and asserts it contains `'bd sync'` and `'beads_ready'`.\nThese tests exercise the `src/generators/claude-md.ts` tracker-conditional logic through the full CLI stack.",
+            "status": "done",
+            "testStrategy": "Run `npm run build && npm test`. Both tracker tests pass. Inspect actual CLAUDE.md output if assertions fail to identify the exact strings produced by the generators.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:42:01.595Z"
+          },
+          {
+            "id": 5,
+            "title": "Add document scaffolding test",
+            "description": "Write a demo test that verifies all six standard documentation template files are created under docs/ when the CLI runs with default settings.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add:\n```typescript\nit('demo: doc generation creates all template files', async () => {\n  await runCli([], tempDir, {\n    SETUP_AI_NONINTERACTIVE: '1',\n    SETUP_AI_SKIP_AUDIT: '1',\n  });\n  const docFiles = [\n    'docs/doc_format.md',\n    'docs/prd.md',\n    'docs/architecture.md',\n    'docs/testing_strategy.md',\n    'docs/onboarding.md',\n    'docs/cuj.md',\n  ];\n  for (const file of docFiles) {\n    await expect(fs.access(path.join(tempDir, file))).resolves.toBeUndefined();\n  }\n});\n```\nThe default config from `src/defaults.ts` enables `generateDocs: true`, so all docs should be generated. Verify the template files exist in `templates/docs/` to confirm the expected output file names match the generator logic in `src/generators/docs.ts`.",
+            "status": "done",
+            "testStrategy": "Run `npm run build && npm test`. The doc generation test passes with all six doc paths accessible. Cross-check with `src/generators/docs.ts` if any doc file is missing.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:42:07.149Z"
+          },
+          {
+            "id": 6,
+            "title": "Add rules/skills/hooks generation test with content assertion",
+            "description": "Write a demo test verifying that .claude/rules/testing.md is generated and contains the integration-first testing philosophy strings required by F9.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add:\n```typescript\nit('demo: rules generation includes testing.md with integration-first philosophy', async () => {\n  await runCli([], tempDir, {\n    SETUP_AI_NONINTERACTIVE: '1',\n    SETUP_AI_SKIP_AUDIT: '1',\n  });\n  const testingRule = await fs.readFile(\n    path.join(tempDir, '.claude/rules/testing.md'),\n    'utf8'\n  );\n  expect(testingRule).toContain('Integration tests');\n  expect(testingRule).toContain('Demo checkpoints');\n  expect(testingRule).toContain('demo:');\n});\n```\nAlso add a companion assertion block for skills and hooks within the same test or as a second test `it('smoke: skills and hooks are generated', ...)` that checks `.claude/skills/testing.md` exists and `.claude/hooks/pre-commit.sh` exists. Verify against `templates/rules/testing.md` for expected string content.",
+            "status": "done",
+            "testStrategy": "Run `npm run build && npm test`. Test passes. Read `templates/rules/testing.md` to confirm the strings `Integration tests`, `Demo checkpoints`, and `demo:` are present in the template source.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:42:12.491Z"
+          },
+          {
+            "id": 7,
+            "title": "Add idempotency test (running CLI twice yields same output)",
+            "description": "Write a demo test that runs the CLI twice against the same temp directory and asserts that CLAUDE.md content is byte-for-byte identical across both runs.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add:\n```typescript\nit('demo: idempotency — running twice produces same result', async () => {\n  const env = { SETUP_AI_NONINTERACTIVE: '1', SETUP_AI_SKIP_AUDIT: '1' };\n  await runCli([], tempDir, env);\n  const firstRun = await fs.readFile(path.join(tempDir, 'CLAUDE.md'), 'utf8');\n  await runCli([], tempDir, env);\n  const secondRun = await fs.readFile(path.join(tempDir, 'CLAUDE.md'), 'utf8');\n  expect(firstRun).toBe(secondRun);\n});\n```\nThis test validates that the CLI's default `overwrite: true` behaviour produces stable, deterministic output. Also optionally read `.mcp.json` and assert equality across both runs to cover JSON generation idempotency. The test relies on `runPostCreate`'s file-writing logic not appending or generating non-deterministic content (e.g., timestamps).",
+            "status": "done",
+            "testStrategy": "Run `npm run build && npm test`. Test passes. If the test reveals non-deterministic output (e.g., a timestamp field), that is a bug in the generator that must be fixed before the test can be marked done.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:42:17.945Z"
+          },
+          {
+            "id": 8,
+            "title": "Add CLI lifecycle sub-command tests (post-create, post-start)",
+            "description": "Write smoke tests for the `post-create` and `post-start` CLI sub-commands to verify each lifecycle command runs without error and produces expected side effects.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add two tests:\n1. `it('smoke: post-create command generates core files', ...)` — calls `runCli(['post-create'], tempDir, { SETUP_AI_SKIP_AUDIT: '1' })` and asserts `.mcp.json` and `CLAUDE.md` exist.\n2. `it('smoke: post-start command runs without error', ...)` — calls `runCli(['post-start'], tempDir, {})` and asserts the promise resolves (no throw). Optionally reads `.env` to confirm env-sync ran if `ANTHROPIC_API_KEY` is set in the test environment.\nFor the `post-create` command, note from `src/cli.ts:62` that it forces `SETUP_AI_NONINTERACTIVE=1` internally, so no env override is needed for non-interactive mode — only `SETUP_AI_SKIP_AUDIT=1` is required. For `post-start`, it uses `defaultConfig(projectRoot)` directly without a wizard, so it always succeeds even with an empty directory.",
+            "status": "done",
+            "testStrategy": "Run `npm run build && npm test`. Both lifecycle tests pass. Verify the full test suite (all tests in `test/integration/full-run.test.ts`) passes with `npm test` and that no existing tests in `test/integration/phases.test.ts` are broken.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-17T22:42:23.203Z"
+          }
+        ],
+        "updatedAt": "2026-02-17T22:42:23.203Z"
       },
       {
         "id": "20",
@@ -1255,9 +1359,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T22:25:28.516Z",
+      "lastModified": "2026-02-17T22:42:23.204Z",
       "taskCount": 23,
-      "completedCount": 17,
+      "completedCount": 19,
       "tags": [
         "master"
       ]
