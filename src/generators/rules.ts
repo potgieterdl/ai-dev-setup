@@ -46,10 +46,22 @@ export async function generateRules(config: ProjectConfig): Promise<FileDescript
     "**/migrations/**",
   ];
 
+  const { toolchain: tc } = config;
+  const languageLabel =
+    tc.language === "node"
+      ? "TypeScript"
+      : tc.language === "python"
+        ? "Python"
+        : tc.language === "go"
+          ? "Go"
+          : tc.language === "rust"
+            ? "Rust"
+            : "TypeScript";
+
   const vars: Record<string, string> = {
     PROJECT_NAME: config.projectName,
     TASK_TRACKER: config.taskTracker,
-    LANGUAGE: "TypeScript",
+    LANGUAGE: languageLabel,
     PM_NAME: config.pm.name,
     PM_RUN: config.pm.run,
     PM_INSTALL: config.pm.install,
@@ -59,6 +71,11 @@ export async function generateRules(config: ProjectConfig): Promise<FileDescript
     PM_INSTALL_GLOBAL: config.pm.installGlobal,
     API_PATHS: apiPaths.map((p) => `"${p}"`).join("\n  - "),
     DB_PATHS: dbPaths.map((p) => `"${p}"`).join("\n  - "),
+    FORMAT_CMD: tc.format,
+    LINT_CMD: tc.lint,
+    TYPECHECK_CMD: tc.typecheck,
+    BUILD_CMD: tc.build,
+    TEST_CMD: tc.test,
   };
 
   const selected = new Set(config.selectedRules);

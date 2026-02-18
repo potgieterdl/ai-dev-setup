@@ -56,17 +56,17 @@ Name demo tests clearly with the `demo:` prefix — they double as proof of feat
 
 Run before every commit (enforced by pre-commit hook):
 
-| Step          | Command                | Must Pass    |
-| ------------- | ---------------------- | ------------ |
-| 1. Format     | `{{PM_RUN}} format`    | Yes          |
-| 2. Lint       | `{{PM_RUN}} lint`      | Yes (errors) |
-| 3. Type-check | `{{PM_RUN}} typecheck` | Yes          |
-| 4. Build      | `{{PM_RUN}} build`     | Yes          |
-| 5. Test       | `{{PM_TEST}}`          | Yes          |
+| Step          | Command              | Must Pass    |
+| ------------- | -------------------- | ------------ |
+| 1. Format     | `{{FORMAT_CMD}}`     | Yes          |
+| 2. Lint       | `{{LINT_CMD}}`       | Yes (errors) |
+| 3. Type-check | `{{TYPECHECK_CMD}}`  | Yes          |
+| 4. Build      | `{{BUILD_CMD}}`      | Yes          |
+| 5. Test       | `{{TEST_CMD}}`       | Yes          |
 
 ## Writing Tests
 
-- Place tests alongside source: `src/auth/login.test.ts` or in `test/` mirror
+- Place tests alongside source or in a `test/` mirror directory
 - Use `describe` blocks matching the module under test
 - One assertion per `it` block where practical
 - Include setup/teardown for shared resources (DB connections, servers)

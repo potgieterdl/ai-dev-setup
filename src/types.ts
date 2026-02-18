@@ -3,6 +3,24 @@
  * The central ProjectConfig type drives all code generation.
  */
 
+/** Supported primary languages for toolchain detection (F19) */
+export type Language = "node" | "python" | "go" | "rust" | "unknown";
+
+/** Language toolchain — commands used for format, lint, typecheck, build, test (F19) */
+export interface ToolChain {
+  language: Language;
+  /** Format command, e.g. "npx prettier --write ." | "black ." | "gofmt -w ." | "cargo fmt" */
+  format: string;
+  /** Lint command, e.g. "npx eslint . --fix" | "ruff check --fix ." | "cargo clippy" */
+  lint: string;
+  /** Type-check command, or empty string for Go/Rust (compile-time type safety) */
+  typecheck: string;
+  /** Build command, e.g. "npm run build" | "python -m build" | "go build ./..." */
+  build: string;
+  /** Test command, e.g. "npm test" | "pytest" | "go test ./..." | "cargo test" */
+  test: string;
+}
+
 /** Supported package manager names */
 export type PackageManagerName = "npm" | "pnpm" | "yarn" | "bun";
 
@@ -145,6 +163,9 @@ export interface ProjectConfig {
   // Package manager (F15)
   pm: PackageManager;
 
+  // Language toolchain (F19)
+  toolchain: ToolChain;
+
   // Project metadata
   projectName: string;
   projectRoot: string;
@@ -208,6 +229,7 @@ export interface PresetConfig {
   selectedSkills: string[];
   selectedHookSteps: string[];
   pm?: PackageManagerName;
+  language?: Language;
   agentTeamsEnabled: boolean;
   generateDocs: boolean;
   generateRules: boolean;

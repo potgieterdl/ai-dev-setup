@@ -9,21 +9,22 @@ paths:
 ## Language & Runtime
 
 - **Language:** {{LANGUAGE}}
-- **Runtime:** Node.js ≥ 20
-- **Module system:** ESM (`"type": "module"` in package.json)
+- **Package Manager:** {{PM_NAME}}
 
-## Package Manager
+## Toolchain Commands
 
-- Use `{{PM_NAME}}` for dependency management
-- Always use `{{PM_INSTALL}}` in CI environments
-- Prefer `@latest` when adding new packages — never guess version numbers
-- Lock files are source of truth — do not edit manually
+| Action     | Command              |
+| ---------- | -------------------- |
+| Format     | `{{FORMAT_CMD}}`     |
+| Lint       | `{{LINT_CMD}}`       |
+| Type-check | `{{TYPECHECK_CMD}}`  |
+| Build      | `{{BUILD_CMD}}`      |
+| Test       | `{{TEST_CMD}}`       |
 
 ## Coding Style
 
-- Follow the project's Prettier and ESLint configurations
-- Use strict TypeScript (`strict: true`) — no `any` unless unavoidable with a `// eslint-disable` + comment
-- Prefer `const` over `let`; never use `var`
+- Follow the project's configured formatter and linter
+- Prefer `const` over `let`; avoid mutable state where possible
 - Use named exports over default exports
 - Keep functions small and focused — one responsibility per function
 - Use early returns to reduce nesting

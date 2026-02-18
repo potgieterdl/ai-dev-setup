@@ -34,6 +34,7 @@ const CORE_DOCS = [
  * Implements F2 (Document Scaffolding) from the PRD.
  */
 export async function generateDocs(config: ProjectConfig): Promise<FileDescriptor[]> {
+  const { toolchain: tc } = config;
   const vars: Record<string, string> = {
     PROJECT_NAME: config.projectName,
     ARCHITECTURE: config.architecture,
@@ -46,6 +47,11 @@ export async function generateDocs(config: ProjectConfig): Promise<FileDescripto
     PM_TEST: config.pm.test,
     PM_RUN_IF_PRESENT: config.pm.runIfPresent,
     PM_INSTALL_GLOBAL: config.pm.installGlobal,
+    FORMAT_CMD: tc.format,
+    LINT_CMD: tc.lint,
+    TYPECHECK_CMD: tc.typecheck,
+    BUILD_CMD: tc.build,
+    TEST_CMD: tc.test,
   };
 
   const files: FileDescriptor[] = [];

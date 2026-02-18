@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { generateClaudeMd } from "../../src/generators/claude-md.js";
 import { defaultConfig } from "../../src/defaults.js";
 import { PACKAGE_MANAGERS } from "../../src/pm.js";
+import { buildToolChain } from "../../src/toolchain.js";
 import type { ProjectConfig } from "../../src/types.js";
 
 function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
@@ -166,7 +167,8 @@ describe("generateClaudeMd", () => {
 
   describe("package manager awareness (F15)", () => {
     it("demo: quality gate uses pnpm commands when pm is pnpm", () => {
-      const result = generateClaudeMd(makeConfig({ pm: PACKAGE_MANAGERS.pnpm }));
+      const pm = PACKAGE_MANAGERS.pnpm;
+      const result = generateClaudeMd(makeConfig({ pm, toolchain: buildToolChain("node", pm) }));
       const content = result[0].content;
       expect(content).toContain("pnpm format");
       expect(content).toContain("pnpm lint");
@@ -176,7 +178,8 @@ describe("generateClaudeMd", () => {
     });
 
     it("demo: quality gate uses yarn commands when pm is yarn", () => {
-      const result = generateClaudeMd(makeConfig({ pm: PACKAGE_MANAGERS.yarn }));
+      const pm = PACKAGE_MANAGERS.yarn;
+      const result = generateClaudeMd(makeConfig({ pm, toolchain: buildToolChain("node", pm) }));
       const content = result[0].content;
       expect(content).toContain("yarn format");
       expect(content).toContain("yarn lint");

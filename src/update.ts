@@ -5,6 +5,7 @@ import { MCP_REGISTRY } from "./registry.js";
 import { runPostCreate } from "./phases/post-create.js";
 import { defaultConfig } from "./defaults.js";
 import { PACKAGE_MANAGERS, isValidPmName } from "./pm.js";
+import { buildToolChain, detectLanguage } from "./toolchain.js";
 
 /** Files that should be backed up before destructive changes, keyed by change category. */
 const DESTRUCTIVE_FILE_MAP: Record<string, string[]> = {
@@ -20,6 +21,8 @@ const DESTRUCTIVE_FILE_MAP: Record<string, string[]> = {
 /** Convert a SavedConfig back into a ProjectConfig for regeneration. */
 function savedToProjectConfig(saved: SavedConfig, projectRoot: string): ProjectConfig {
   const base = defaultConfig(projectRoot);
+  const pm = PACKAGE_MANAGERS[saved.pm] ?? PACKAGE_MANAGERS.npm;
+  const language = detectLanguage(projectRoot);
   return {
     ...base,
     selectedMcps: saved.selectedMcps,
@@ -29,7 +32,8 @@ function savedToProjectConfig(saved: SavedConfig, projectRoot: string): ProjectC
     selectedRules: saved.selectedRules,
     selectedHookSteps: saved.selectedHookSteps,
     selectedSkills: saved.selectedSkills,
-    pm: PACKAGE_MANAGERS[saved.pm] ?? PACKAGE_MANAGERS.npm,
+    pm,
+    toolchain: buildToolChain(language, pm),
     hasApiDocs: saved.selectedRules.includes("api"),
     hasDatabase: saved.selectedRules.includes("database"),
   };

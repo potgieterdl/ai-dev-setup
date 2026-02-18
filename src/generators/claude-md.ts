@@ -96,19 +96,25 @@ Multiple rules compose — when editing \`src/api/users.ts\`, rules for api, sec
 }
 
 /**
- * Build the quality gate section using PM-aware commands.
+ * Build the quality gate section using toolchain-aware commands (F19).
+ * Uses the project's detected toolchain for correct language commands.
  */
 function buildQualityGate(config: ProjectConfig): string {
-  const { pm } = config;
+  const { toolchain: tc } = config;
+  const steps: string[] = [];
+  let idx = 1;
+
+  if (tc.format) steps.push(`${idx++}. Format: \`${tc.format}\``);
+  if (tc.lint) steps.push(`${idx++}. Lint: \`${tc.lint}\``);
+  if (tc.typecheck) steps.push(`${idx++}. Type-check: \`${tc.typecheck}\``);
+  if (tc.build) steps.push(`${idx++}. Build: \`${tc.build}\``);
+  if (tc.test) steps.push(`${idx++}. Test: \`${tc.test}\``);
+
   return `## Quality Gate
 
 Before marking any task done:
 
-1. Format: \`${pm.run} format\`
-2. Lint: \`${pm.run} lint\`
-3. Type-check: \`${pm.run} typecheck\`
-4. Build: \`${pm.run} build\`
-5. Test: \`${pm.test}\`
+${steps.join("\n")}
 
 Never mark a task done if any step fails. Fix issues first.`;
 }

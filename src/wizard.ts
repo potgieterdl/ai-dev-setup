@@ -1,5 +1,5 @@
 import { select, checkbox, confirm, input } from "@inquirer/prompts";
-import type { ProjectConfig, TaskTracker, Architecture } from "./types.js";
+import type { ProjectConfig, TaskTracker, Architecture, Language } from "./types.js";
 import { MCP_REGISTRY } from "./registry.js";
 import { defaultConfig } from "./defaults.js";
 import { commandExists, run } from "./utils.js";
@@ -7,6 +7,7 @@ import { detectPackageManager, PACKAGE_MANAGERS, isValidPmName } from "./pm.js";
 import { checkClaudeAuthenticated } from "./audit.js";
 import { analyzeProject } from "./analyze.js";
 import { listPresets, applyPreset } from "./presets.js";
+import { detectLanguage, buildToolChain, isValidLanguage } from "./toolchain.js";
 
 /**
  * Check if the wizard is running in non-interactive mode.
@@ -184,6 +185,47 @@ async function stepPackageManager(config: ProjectConfig): Promise<void> {
   if (!isNonInteractive()) {
     console.log(`  Package manager: ${detected.name} (auto-detected)`);
   }
+}
+
+/**
+ * Language Detection (F19)
+ * Auto-detects primary language from project marker files.
+ * Override: SETUP_AI_LANGUAGE env var. In interactive mode, user can confirm/change.
+ */
+async function stepLanguageDetection(config: ProjectConfig): Promise<void> {
+  // Check for explicit override via env var
+  const envLang = process.env.SETUP_AI_LANGUAGE;
+  if (envLang && isValidLanguage(envLang)) {
+    config.toolchain = buildToolChain(envLang, config.pm);
+    if (!isNonInteractive()) {
+      console.log(`  Language: ${envLang} (from SETUP_AI_LANGUAGE)`);
+    }
+    return;
+  }
+
+  const detected = detectLanguage(config.projectRoot);
+
+  if (isNonInteractive()) {
+    config.toolchain = buildToolChain(detected, config.pm);
+    return;
+  }
+
+  const choices: { name: string; value: Language }[] = [
+    { name: "Node.js / TypeScript", value: "node" },
+    { name: "Python", value: "python" },
+    { name: "Go", value: "go" },
+    { name: "Rust", value: "rust" },
+    { name: "Unknown / Other", value: "unknown" },
+  ];
+
+  const language = (await select({
+    message: `Primary language detected as "${detected}". Confirm or change:`,
+    default: detected,
+    choices,
+  })) as Language;
+
+  config.toolchain = buildToolChain(language, config.pm);
+  console.log(`  Language: ${language} (toolchain configured)`);
 }
 
 /**
@@ -528,6 +570,7 @@ function stepSummary(config: ProjectConfig): void {
   console.log(`  Project:       ${config.projectName}`);
   console.log(`  Project type:  ${config.isExistingProject ? "existing" : "new"}`);
   console.log(`  Package mgr:   ${config.pm.name}`);
+  console.log(`  Language:      ${config.toolchain.language}`);
   console.log(`  Claude auth:   ${config.claudeAuthenticated ? "yes" : "no"}`);
   console.log(`  AI analysis:   ${config.analysisResult ? "applied" : "not used"}`);
   console.log(`  MCP servers:   ${config.selectedMcps.join(", ") || "none"}`);
@@ -602,6 +645,9 @@ export async function runWizard(projectRoot: string): Promise<ProjectConfig> {
 
   // Package Manager Detection (F15) — auto-detect before wizard steps
   await stepPackageManager(config);
+
+  // Language Detection (F19) — auto-detect, then build toolchain with detected PM
+  await stepLanguageDetection(config);
 
   // New vs Existing Project (F20)
   await stepNewVsExisting(config);

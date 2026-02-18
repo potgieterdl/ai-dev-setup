@@ -26,7 +26,11 @@ paths:
 
 ## Quality Gate (Pre-Commit)
 
-1. Format → 2. Lint → 3. Type-check → 4. Build → 5. ALL tests pass
+1. Format: `{{FORMAT_CMD}}`
+2. Lint: `{{LINT_CMD}}`
+3. Type-check: `{{TYPECHECK_CMD}}`
+4. Build: `{{BUILD_CMD}}`
+5. Test: `{{TEST_CMD}}`
 
 - Never delete a test to make the suite pass.
 - Never mark a task done if tests are failing.

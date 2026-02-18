@@ -1,9 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { ProjectConfig, FileDescriptor, PackageManager } from "../types.js";
+import type { ProjectConfig, FileDescriptor, PackageManager, ToolChain } from "../types.js";
 
-/** Build PM-aware hook step snippets from the resolved PackageManager. */
-function buildStepSnippets(pm: PackageManager): Record<string, { label: string; script: string }> {
+/** Build PM-aware hook step snippets for Node.js projects. */
+function buildNodeStepSnippets(
+  pm: PackageManager
+): Record<string, { label: string; script: string }> {
   return {
     format: {
       label: "Format",
@@ -28,10 +30,68 @@ function buildStepSnippets(pm: PackageManager): Record<string, { label: string; 
   };
 }
 
+/** Build toolchain-aware hook step snippets for non-Node languages (F19). */
+function buildToolChainStepSnippets(
+  tc: ToolChain
+): Record<string, { label: string; script: string }> {
+  const snippets: Record<string, { label: string; script: string }> = {};
+
+  if (tc.format) {
+    snippets.format = {
+      label: "Format",
+      script: `${tc.format} || { echo "BLOCK: Format failed. Fix before committing."; exit 1; }`,
+    };
+  }
+
+  if (tc.lint) {
+    snippets.lint = {
+      label: "Lint (fail on errors)",
+      script: `${tc.lint} || { echo "BLOCK: Lint errors found. Fix before committing."; exit 1; }`,
+    };
+  }
+
+  if (tc.typecheck) {
+    snippets.typecheck = {
+      label: "Type-check",
+      script: `${tc.typecheck} || { echo "BLOCK: Type errors found. Fix before committing."; exit 1; }`,
+    };
+  }
+
+  if (tc.build) {
+    snippets.build = {
+      label: "Build",
+      script: `${tc.build} || { echo "BLOCK: Build failed. Fix before committing."; exit 1; }`,
+    };
+  }
+
+  if (tc.test) {
+    snippets.test = {
+      label: "Test",
+      script: `${tc.test} || { echo "BLOCK: Tests failing. Fix before committing."; exit 1; }`,
+    };
+  }
+
+  return snippets;
+}
+
+/**
+ * Build step snippets based on the project's toolchain.
+ * Node.js projects use PM-aware --if-present pattern.
+ * Other languages use direct toolchain commands.
+ */
+function buildStepSnippets(
+  config: ProjectConfig
+): Record<string, { label: string; script: string }> {
+  if (config.toolchain.language === "node") {
+    return buildNodeStepSnippets(config.pm);
+  }
+  return buildToolChainStepSnippets(config.toolchain);
+}
+
 /**
  * Build the pre-commit.sh script dynamically from selected hook steps.
  */
-function buildPreCommitScript(selectedSteps: string[], pm: PackageManager): string {
+function buildPreCommitScript(selectedSteps: string[], config: ProjectConfig): string {
   const lines = [
     "#!/usr/bin/env bash",
     "set -euo pipefail",
@@ -40,7 +100,7 @@ function buildPreCommitScript(selectedSteps: string[], pm: PackageManager): stri
     "",
   ];
 
-  const snippets = buildStepSnippets(pm);
+  const snippets = buildStepSnippets(config);
   selectedSteps.forEach((step, idx) => {
     const snippet = snippets[step];
     if (!snippet) return;
@@ -60,20 +120,21 @@ function buildPreCommitScript(selectedSteps: string[], pm: PackageManager): stri
  * Produces:
  * 1. .claude/hooks/pre-commit.sh — the quality gate script (marked executable)
  *    Built dynamically from config.selectedHookSteps (F13).
+ *    Uses toolchain-aware commands for non-Node languages (F19).
  * 2. .claude/settings.json — hook matcher config that triggers pre-commit.sh
  *    on `Bash(git commit)` events
  *
  * If a .claude/settings.json already exists in the target project, the hooks
  * entry is merged into it. Otherwise a new settings file is created.
  *
- * Implements F3 (Hooks generation) and F13 (Granular opt-in) from the PRD.
+ * Implements F3 (Hooks generation), F13 (Granular opt-in), and F19 (Polyglot) from the PRD.
  */
 export async function generateHooks(config: ProjectConfig): Promise<FileDescriptor[]> {
-  const defaultSteps = Object.keys(buildStepSnippets(config.pm));
+  const defaultSteps = Object.keys(buildStepSnippets(config));
   const selectedSteps = config.selectedHookSteps ?? defaultSteps;
 
   // Build pre-commit script dynamically from selected steps
-  const preCommitContent = buildPreCommitScript(selectedSteps, config.pm);
+  const preCommitContent = buildPreCommitScript(selectedSteps, config);
 
   // Build settings.json with hook matcher
   const settingsContent = await buildSettingsJson(config.projectRoot);

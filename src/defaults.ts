@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { ProjectConfig } from "./types.js";
 import { PACKAGE_MANAGERS } from "./pm.js";
+import { buildToolChain } from "./toolchain.js";
 
 export { BUILTIN_PRESETS } from "./presets.js";
 
@@ -25,6 +26,7 @@ export function defaultConfig(projectRoot: string): ProjectConfig {
     selectedHookSteps: ["format", "lint", "typecheck", "build", "test"],
     selectedSkills: ["testing", "commit", "task-workflow"],
     pm: PACKAGE_MANAGERS.npm,
+    toolchain: buildToolChain("node", PACKAGE_MANAGERS.npm),
     hasApiDocs: false,
     hasDatabase: false,
     isExistingProject: false,

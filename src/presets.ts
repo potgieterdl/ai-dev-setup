@@ -10,6 +10,7 @@ import path from "node:path";
 import os from "node:os";
 import type { Preset, PresetConfig, ProjectConfig, PackageManagerName } from "./types.js";
 import { PACKAGE_MANAGERS, isValidPmName } from "./pm.js";
+import { buildToolChain, isValidLanguage } from "./toolchain.js";
 
 /** Default directory for user-saved presets */
 export const PRESETS_DIR = path.join(os.homedir(), ".ai-dev-setup", "presets");
@@ -211,6 +212,11 @@ export function applyPreset(preset: Preset, base: ProjectConfig): ProjectConfig 
     result.pm = PACKAGE_MANAGERS[c.pm];
   }
 
+  // Restore toolchain from preset language if provided (F19)
+  if (c.language && isValidLanguage(c.language)) {
+    result.toolchain = buildToolChain(c.language, result.pm);
+  }
+
   return result;
 }
 
@@ -233,5 +239,6 @@ function extractPresetConfig(config: ProjectConfig): PresetConfig {
     selectedSkills: config.selectedSkills,
     selectedHookSteps: config.selectedHookSteps,
     pm: config.pm.name as PackageManagerName,
+    language: config.toolchain.language,
   };
 }
