@@ -2,24 +2,24 @@
 set -euo pipefail
 
 # =============================================================================
-# AI Helper Tools — Bootstrap Installer
+# AI Dev Setup — Bootstrap Installer
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/potgieterdl/ai-helper-tools/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/potgieterdl/ai-dev-setup/main/install.sh | bash
 #
 # What it does:
 #   1. Ensures Node.js >= 20 is available (installs via fnm if missing)
-#   2. Clones or updates the repo to ~/.ai-helper-tools (or $AI_HELPER_HOME)
+#   2. Clones or updates the repo to ~/.ai-dev-setup (or $AI_HELPER_HOME)
 #   3. Installs dependencies and builds
 #   4. Symlinks 'ai-init' to ~/.local/bin/
 #
 # Environment:
-#   AI_HELPER_HOME   Override install directory (default: ~/.ai-helper-tools)
+#   AI_HELPER_HOME   Override install directory (default: ~/.ai-dev-setup)
 # =============================================================================
 
-AI_HELPER_HOME="${AI_HELPER_HOME:-$HOME/.ai-helper-tools}"
+AI_HELPER_HOME="${AI_HELPER_HOME:-$HOME/.ai-dev-setup}"
 BIN_DIR="${HOME}/.local/bin"
-REPO_URL="https://github.com/potgieterdl/ai-helper-tools.git"
+REPO_URL="https://github.com/potgieterdl/ai-dev-setup.git"
 NODE_MIN_VERSION=20
 
 # --- Helpers ---
@@ -60,12 +60,12 @@ ensure_node() {
 
 ensure_repo() {
   if [ -d "$AI_HELPER_HOME/.git" ]; then
-    log "Updating ai-helper-tools..."
+    log "Updating ai-dev-setup..."
     git -C "$AI_HELPER_HOME" pull --ff-only || {
       fail "git pull failed — continuing with existing version"
     }
   else
-    log "Cloning ai-helper-tools to $AI_HELPER_HOME..."
+    log "Cloning ai-dev-setup to $AI_HELPER_HOME..."
     git clone "$REPO_URL" "$AI_HELPER_HOME"
   fi
   pass "Repository ready at $AI_HELPER_HOME"
@@ -110,7 +110,7 @@ WRAPPER
 
 main() {
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "  AI Helper Tools — Installer"
+  echo "  AI Dev Setup — Installer"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
 

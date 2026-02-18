@@ -11,7 +11,7 @@ set -euo pipefail
 #   - Agent teams opt-in configuration
 #
 # Migration:
-#   Install:  curl -fsSL https://raw.githubusercontent.com/potgieterdl/ai-helper-tools/main/install.sh | bash
+#   Install:  curl -fsSL https://raw.githubusercontent.com/potgieterdl/ai-dev-setup/main/install.sh | bash
 #   Usage:    ai-init                  # Interactive wizard (replaces ./setup-ai.sh)
 #             ai-init on-create        # Replaces ./setup-ai.sh on-create
 #             ai-init post-create      # Replaces ./setup-ai.sh post-create

@@ -16,10 +16,10 @@
 ## Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/potgieterdl/ai-helper-tools/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/potgieterdl/ai-dev-setup/main/install.sh | bash
 ```
 
-The installer ensures Node.js >= 20 is available (installs via [fnm](https://fnm.vercel.app/) if missing), clones the repo to `~/.ai-helper-tools`, builds, and symlinks `ai-init` onto your PATH.
+The installer ensures Node.js >= 20 is available (installs via [fnm](https://fnm.vercel.app/) if missing), clones the repo to `~/.ai-dev-setup`, builds, and symlinks `ai-init` onto your PATH.
 
 ## Usage
 
@@ -96,7 +96,7 @@ All variables are optional. They drive non-interactive mode when `SETUP_AI_NONIN
 | `SETUP_AI_SKIP_AUDIT`     | `1` to skip AI audit step                                                   | `0`                  |
 | `SETUP_AI_AGENT_TEAMS`    | `1` to enable agent teams                                                   | `0`                  |
 | `SETUP_AI_PRD_PATH`       | Path to existing PRD file                                                   | —                    |
-| `AI_HELPER_HOME`          | Override install directory                                                  | `~/.ai-helper-tools` |
+| `AI_HELPER_HOME`          | Override install directory                                                  | `~/.ai-dev-setup` |
 
 ## Development
 
