@@ -29,6 +29,9 @@ dist/
 # AI init audit artifact (F11)
 .ai-init-audit.md
 
+# AI init backup directory (F16)
+.ai-init-backup/
+
 # Agent automation logs
 agent_logs/
 

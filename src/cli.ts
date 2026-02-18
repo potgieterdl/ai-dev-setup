@@ -3,9 +3,12 @@
 import meow from "meow";
 import { runOnCreate, runPostCreate, runPostStart } from "./phases/index.js";
 import { runWizard } from "./wizard.js";
+import { runUpdate } from "./update.js";
 import { runAudit, checkClaudeCodeAvailable, installClaudeCode } from "./audit.js";
 import { defaultConfig } from "./defaults.js";
 import { isValidPmName } from "./pm.js";
+import { writeSavedConfig } from "./utils.js";
+import type { ProjectConfig, SavedConfig } from "./types.js";
 
 const cli = meow(
   `
@@ -17,6 +20,7 @@ const cli = meow(
     on-create       Heavy installs — run once during Codespace creation
     post-create     Project scaffolding — run after Codespace creation
     post-start      Per-session setup — run on every container start
+    update          Incrementally reconfigure after initial setup
 
   Options
     --non-interactive   Skip prompts, use environment variables
@@ -25,6 +29,15 @@ const cli = meow(
     --pm <name>         Force package manager: npm | pnpm | yarn | bun
     --version           Show version
     --help              Show help
+
+  Update Options (for 'ai-init update')
+    --add-mcp=<name>      Add an MCP server
+    --remove-mcp=<name>   Remove an MCP server
+    --tracker=<name>      Switch task tracker (taskmaster|beads|markdown)
+    --add-rule=<name>     Add a rule category
+    --remove-rule=<name>  Remove a rule category
+    --enable-teams        Enable agent teams
+    --disable-teams       Disable agent teams
 
   Environment Variables
     SETUP_AI_NONINTERACTIVE=1   Same as --non-interactive
@@ -43,9 +56,35 @@ const cli = meow(
       audit: { type: "boolean", default: true },
       overwrite: { type: "boolean", default: true },
       pm: { type: "string" },
+      // Update subcommand flags (F16)
+      addMcp: { type: "string" },
+      removeMcp: { type: "string" },
+      tracker: { type: "string" },
+      addRule: { type: "string" },
+      removeRule: { type: "string" },
+      enableTeams: { type: "boolean", default: false },
+      disableTeams: { type: "boolean", default: false },
     },
   }
 );
+
+/**
+ * Build a SavedConfig from a ProjectConfig for persistence to .ai-init.json (F16).
+ */
+function toSavedConfig(config: ProjectConfig): SavedConfig {
+  return {
+    version: "0.1.0",
+    selectedMcps: config.selectedMcps,
+    taskTracker: config.taskTracker,
+    architecture: config.architecture,
+    selectedRules: config.selectedRules,
+    selectedHookSteps: config.selectedHookSteps,
+    selectedSkills: config.selectedSkills,
+    pm: config.pm.name,
+    agentTeamsEnabled: config.agentTeamsEnabled,
+    generatedAt: new Date().toISOString(),
+  };
+}
 
 /**
  * If --pm flag is set, propagate it via SETUP_AI_PM so the wizard picks it up.
@@ -88,6 +127,8 @@ async function main(): Promise<void> {
       }
       const written = await runPostCreate(config, cli.flags.overwrite);
       printGeneratedFiles(written);
+      // Persist wizard choices for incremental updates (F16)
+      await writeSavedConfig(projectRoot, toSavedConfig(config));
       if (config.runAudit) {
         await runAudit(config, config.generatedFiles);
       }
@@ -98,6 +139,12 @@ async function main(): Promise<void> {
       // Lightweight per-session setup — use defaults, no full wizard needed
       const config = defaultConfig(projectRoot);
       await runPostStart(config);
+      break;
+    }
+
+    case "update": {
+      // Incremental re-configuration (F16)
+      await runUpdate(projectRoot, cli.flags);
       break;
     }
 
@@ -121,6 +168,9 @@ async function main(): Promise<void> {
 
       const written = await runPostCreate(config, cli.flags.overwrite);
       printGeneratedFiles(written);
+
+      // Persist wizard choices for incremental updates (F16)
+      await writeSavedConfig(projectRoot, toSavedConfig(config));
 
       if (config.runAudit) {
         await runAudit(config, config.generatedFiles);

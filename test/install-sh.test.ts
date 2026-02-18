@@ -27,11 +27,11 @@ describe("install.sh", () => {
   });
 
   it("defines AI_HELPER_HOME with a default", () => {
-    expect(content).toMatch(/AI_HELPER_HOME=.*\$HOME\/\.ai-helper-tools/);
+    expect(content).toMatch(/AI_HELPER_HOME=.*\$HOME\/\.ai-dev-setup/);
   });
 
   it("defines REPO_URL pointing to the GitHub repository", () => {
-    expect(content).toContain("https://github.com/potgieterdl/ai-helper-tools.git");
+    expect(content).toContain("https://github.com/potgieterdl/ai-dev-setup.git");
   });
 
   it("checks for Node.js >= 20", () => {

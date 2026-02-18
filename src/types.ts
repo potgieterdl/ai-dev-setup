@@ -99,6 +99,29 @@ export interface ProjectConfig {
   generatedFiles: string[];
 }
 
+/**
+ * Persisted wizard state written to .ai-init.json after first run (F16).
+ * The `update` subcommand reads this to enable diff-based re-configuration.
+ */
+export interface SavedConfig {
+  /** semver of ai-init that wrote this file */
+  version: string;
+  selectedMcps: string[];
+  taskTracker: TaskTracker;
+  architecture: Architecture;
+  /** Granular rule selections from F13 */
+  selectedRules: string[];
+  /** Granular hook step selections from F13 */
+  selectedHookSteps: string[];
+  /** Granular skill selections from F13 */
+  selectedSkills: string[];
+  /** Package manager name, e.g. "npm" */
+  pm: PackageManagerName;
+  agentTeamsEnabled: boolean;
+  /** ISO 8601 timestamp of when config was written */
+  generatedAt: string;
+}
+
 /** Structured output from the Claude Code headless audit (F11) */
 export interface AuditResult {
   passes: string[];

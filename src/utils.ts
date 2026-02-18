@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type { FileDescriptor } from "./types.js";
+import type { FileDescriptor, SavedConfig } from "./types.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -74,4 +74,50 @@ export async function readOptional(filePath: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/* ──────────────────────────────────────────────────────────
+ * Config persistence & backup helpers (F16)
+ * ────────────────────────────────────────────────────────── */
+
+const SAVED_CONFIG_FILENAME = ".ai-init.json";
+
+/** Read the persisted config from <projectRoot>/.ai-init.json, or null if absent/invalid. */
+export async function readSavedConfig(projectRoot: string): Promise<SavedConfig | null> {
+  const filePath = path.join(projectRoot, SAVED_CONFIG_FILENAME);
+  const raw = await readOptional(filePath);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as SavedConfig;
+  } catch {
+    return null;
+  }
+}
+
+/** Write the persisted config to <projectRoot>/.ai-init.json. */
+export async function writeSavedConfig(projectRoot: string, config: SavedConfig): Promise<void> {
+  const filePath = path.join(projectRoot, SAVED_CONFIG_FILENAME);
+  await fs.writeFile(filePath, JSON.stringify(config, null, 2) + "\n", "utf8");
+}
+
+/**
+ * Copy a list of relative file paths to .ai-init-backup/<timestamp>/ before destructive changes.
+ * Silently skips files that don't exist.
+ * Returns the backup directory path.
+ */
+export async function backupFiles(projectRoot: string, relativePaths: string[]): Promise<string> {
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const backupDir = path.join(projectRoot, ".ai-init-backup", ts);
+  await fs.mkdir(backupDir, { recursive: true });
+  for (const rel of relativePaths) {
+    const src = path.join(projectRoot, rel);
+    const dst = path.join(backupDir, rel);
+    await fs.mkdir(path.dirname(dst), { recursive: true });
+    try {
+      await fs.copyFile(src, dst);
+    } catch {
+      /* file may not exist — skip */
+    }
+  }
+  return backupDir;
 }
