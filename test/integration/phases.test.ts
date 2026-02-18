@@ -218,6 +218,28 @@ describe("runPostStart", () => {
     }
   });
 
+  it("reads tagged Task Master tasks.json format (master.tasks)", async () => {
+    const config = makeConfig({ taskTracker: "taskmaster" });
+
+    // Create a tagged tasks.json (format used when Task Master tags are enabled)
+    const tasksDir = path.join(tmpDir, ".taskmaster/tasks");
+    await fs.mkdir(tasksDir, { recursive: true });
+    await fs.writeFile(
+      path.join(tasksDir, "tasks.json"),
+      JSON.stringify({
+        master: {
+          tasks: [
+            { id: "1", title: "Task 1", status: "done" },
+            { id: "2", title: "Task 2", status: "pending" },
+          ],
+        },
+      }),
+      "utf8"
+    );
+
+    await expect(runPostStart(config)).resolves.not.toThrow();
+  });
+
   it("handles beads tracker gracefully with no task file", async () => {
     const config = makeConfig({ taskTracker: "beads" });
     await expect(runPostStart(config)).resolves.not.toThrow();

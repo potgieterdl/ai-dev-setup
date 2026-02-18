@@ -15,8 +15,12 @@ interface TaskSummary {
  */
 function countTaskMasterTasks(raw: string): TaskSummary {
   try {
-    const data = JSON.parse(raw) as { tasks?: Array<{ status: string }> };
-    const tasks = data.tasks ?? [];
+    const data = JSON.parse(raw) as {
+      tasks?: Array<{ status: string }>;
+      master?: { tasks?: Array<{ status: string }> };
+    };
+    // Handle both standard format { tasks: [...] } and tagged format { master: { tasks: [...] } }
+    const tasks = data.tasks ?? data.master?.tasks ?? [];
     return {
       total: tasks.length,
       done: tasks.filter((t) => t.status === "done").length,
@@ -62,6 +66,11 @@ async function syncEnvFile(projectRoot: string): Promise<void> {
     "PERPLEXITY_API_KEY",
     "OPENAI_API_KEY",
     "GOOGLE_API_KEY",
+    "XAI_API_KEY",
+    "OPENROUTER_API_KEY",
+    "MISTRAL_API_KEY",
+    "AZURE_OPENAI_API_KEY",
+    "OLLAMA_API_KEY",
   ];
 
   const newLines: string[] = [];
