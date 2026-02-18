@@ -30,6 +30,8 @@ ai-init --non-interactive  # Env-var driven, no prompts
 ai-init on-create          # Codespace lifecycle: heavy installs
 ai-init post-create        # Codespace lifecycle: project scaffolding
 ai-init post-start         # Codespace lifecycle: per-session setup
+ai-init update             # Incrementally reconfigure after initial setup
+ai-init doctor             # Validate AI dev environment setup
 ```
 
 ### Wizard Steps
@@ -50,13 +52,35 @@ ai-init post-start         # Codespace lifecycle: per-session setup
 
 ### CLI Flags
 
-| Flag                | Description                              |
-| ------------------- | ---------------------------------------- |
-| `--non-interactive` | Skip prompts, use environment variables  |
-| `--no-audit`        | Skip the Claude Code audit step          |
-| `--overwrite`       | Overwrite existing files (default: true) |
-| `--version`         | Show version                             |
-| `--help`            | Show help text                           |
+| Flag                | Description                                 |
+| ------------------- | ------------------------------------------- |
+| `--non-interactive` | Skip prompts, use environment variables     |
+| `--no-audit`        | Skip the Claude Code audit step             |
+| `--overwrite`       | Overwrite existing files (default: true)    |
+| `--version`         | Show version                                |
+| `--help`            | Show help text                              |
+| `--pm <name>`       | Force package manager: npm, pnpm, yarn, bun |
+
+### `ai-init doctor`
+
+Validates the current AI dev environment by running categorized health checks:
+
+| Category               | Checks                                                            |
+| ---------------------- | ----------------------------------------------------------------- |
+| **MCP Configuration**  | Valid JSON, all servers have required fields, API keys set        |
+| **Agent Instructions** | CLAUDE.md exists, not too large, cross-references resolve         |
+| **Rules & Skills**     | Files exist, YAML frontmatter valid, `@import` references resolve |
+| **Hooks**              | Scripts exist, are executable, settings.json matchers valid       |
+| **Task Tracker**       | Configured tracker is set up, task files exist                    |
+| **Documentation**      | Template placeholders filled, no broken links                     |
+| **Dependencies**       | Required npm globals installed (claude, task-master, npx)         |
+
+Exit codes: `0` = all checks pass (warnings OK), `1` = one or more errors.
+
+```bash
+# CI integration
+ai-init doctor || echo "AI dev env needs attention"
+```
 
 ## What Gets Generated
 
@@ -128,6 +152,8 @@ src/
 ├── cli.ts              # Entry point + argument parsing (meow)
 ├── wizard.ts           # 10-step interactive wizard (@inquirer/prompts)
 ├── audit.ts            # Claude Code headless audit runner
+├── doctor.ts           # Health check & validation (ai-init doctor)
+├── update.ts           # Incremental reconfiguration (ai-init update)
 ├── types.ts            # Core TypeScript types
 ├── defaults.ts         # Default ProjectConfig values
 ├── registry.ts         # MCP server definitions

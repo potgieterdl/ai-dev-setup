@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -73,6 +74,40 @@ export async function readOptional(filePath: string): Promise<string | null> {
     return await fs.readFile(filePath, "utf8");
   } catch {
     return null;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+ * Filesystem inspection helpers (F17: doctor command)
+ * ────────────────────────────────────────────────────────── */
+
+/** Returns true if the file at filePath exists. */
+export async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Returns true if the file at filePath is executable by the current user. */
+export async function isExecutable(filePath: string): Promise<boolean> {
+  try {
+    await fs.access(filePath, fsConstants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Returns true if the string is valid JSON. */
+export function isValidJson(content: string): boolean {
+  try {
+    JSON.parse(content);
+    return true;
+  } catch {
+    return false;
   }
 }
 

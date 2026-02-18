@@ -69,3 +69,12 @@ export function getMcpByName(name: string): McpServer | undefined {
 export function getSelectedServers(selectedNames: string[]): McpServer[] {
   return MCP_REGISTRY.filter((s) => selectedNames.includes(s.name));
 }
+
+/** Returns environment variable names required by the given MCP server (by registry name). */
+export function getRequiredEnvVars(serverName: string): string[] {
+  const server = getMcpByName(serverName);
+  if (!server) return [];
+  return Object.values(server.env ?? {})
+    .filter((v) => /^\$\{.+\}$/.test(v))
+    .map((v) => v.slice(2, -1));
+}

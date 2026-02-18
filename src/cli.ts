@@ -4,6 +4,7 @@ import meow from "meow";
 import { runOnCreate, runPostCreate, runPostStart } from "./phases/index.js";
 import { runWizard } from "./wizard.js";
 import { runUpdate } from "./update.js";
+import { runDoctor, printDoctorReport } from "./doctor.js";
 import { runAudit, checkClaudeCodeAvailable, installClaudeCode } from "./audit.js";
 import { defaultConfig } from "./defaults.js";
 import { isValidPmName } from "./pm.js";
@@ -21,6 +22,7 @@ const cli = meow(
     post-create     Project scaffolding — run after Codespace creation
     post-start      Per-session setup — run on every container start
     update          Incrementally reconfigure after initial setup
+    doctor          Validate the AI dev environment setup
 
   Options
     --non-interactive   Skip prompts, use environment variables
@@ -145,6 +147,14 @@ async function main(): Promise<void> {
     case "update": {
       // Incremental re-configuration (F16)
       await runUpdate(projectRoot, cli.flags);
+      break;
+    }
+
+    case "doctor": {
+      // Health check & validation (F17)
+      const checks = await runDoctor(projectRoot);
+      const exitCode = printDoctorReport(checks);
+      process.exit(exitCode);
       break;
     }
 

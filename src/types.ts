@@ -122,6 +122,18 @@ export interface SavedConfig {
   generatedAt: string;
 }
 
+/** A single health check result (F17: doctor command) */
+export interface CheckResult {
+  status: "pass" | "warn" | "error";
+  message: string;
+}
+
+/** A named category of health checks (F17: doctor command) */
+export interface HealthCheck {
+  category: string;
+  results: CheckResult[];
+}
+
 /** Structured output from the Claude Code headless audit (F11) */
 export interface AuditResult {
   passes: string[];
