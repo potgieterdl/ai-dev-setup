@@ -9,7 +9,7 @@ function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
 
 describe("generateCommands", () => {
   describe("file output", () => {
-    it("generates all 3 files", async () => {
+    it("smoke: generates all 3 files", async () => {
       const result = await generateCommands(makeConfig());
       const paths = result.map((f) => f.path);
 
@@ -18,12 +18,12 @@ describe("generateCommands", () => {
       expect(paths).toContain(".claude/boot-prompt.txt");
     });
 
-    it("returns exactly 3 files", async () => {
+    it("smoke: returns exactly 3 files", async () => {
       const result = await generateCommands(makeConfig());
       expect(result).toHaveLength(3);
     });
 
-    it("every generated file has content", async () => {
+    it("smoke: every generated file has content", async () => {
       const result = await generateCommands(makeConfig());
       for (const file of result) {
         expect(file.content.length).toBeGreaterThan(0);
@@ -32,7 +32,7 @@ describe("generateCommands", () => {
   });
 
   describe("dev-next.md tracker-specific content", () => {
-    it("contains task-master next for taskmaster tracker", async () => {
+    it("demo: dev-next.md contains task-master commands for taskmaster tracker", async () => {
       const result = await generateCommands(makeConfig({ taskTracker: "taskmaster" }));
       const devNext = result.find((f) => f.path === ".claude/commands/dev-next.md");
       expect(devNext).toBeDefined();
@@ -40,7 +40,7 @@ describe("generateCommands", () => {
       expect(devNext!.content).toContain("task-master set-status --id=<id> --status=done");
     });
 
-    it("contains bd show for beads tracker", async () => {
+    it("demo: dev-next.md contains bd commands for beads tracker", async () => {
       const result = await generateCommands(makeConfig({ taskTracker: "beads" }));
       const devNext = result.find((f) => f.path === ".claude/commands/dev-next.md");
       expect(devNext).toBeDefined();
@@ -48,7 +48,7 @@ describe("generateCommands", () => {
       expect(devNext!.content).toContain("bd update <id> --status done");
     });
 
-    it("contains TASKS.md reference for markdown tracker", async () => {
+    it("demo: dev-next.md contains TASKS.md reference for markdown tracker", async () => {
       const result = await generateCommands(makeConfig({ taskTracker: "markdown" }));
       const devNext = result.find((f) => f.path === ".claude/commands/dev-next.md");
       expect(devNext).toBeDefined();
@@ -57,14 +57,14 @@ describe("generateCommands", () => {
   });
 
   describe("review.md content", () => {
-    it("contains git diff reference", async () => {
+    it("demo: review.md contains git diff reference", async () => {
       const result = await generateCommands(makeConfig());
       const review = result.find((f) => f.path === ".claude/commands/review.md");
       expect(review).toBeDefined();
       expect(review!.content).toContain("git diff");
     });
 
-    it("contains quality gate steps", async () => {
+    it("demo: review.md contains all quality gate steps", async () => {
       const result = await generateCommands(makeConfig());
       const review = result.find((f) => f.path === ".claude/commands/review.md");
       expect(review).toBeDefined();
@@ -77,28 +77,28 @@ describe("generateCommands", () => {
   });
 
   describe("boot-prompt.txt content", () => {
-    it("has project name substituted", async () => {
+    it("demo: boot-prompt.txt has project name substituted", async () => {
       const result = await generateCommands(makeConfig({ projectName: "my-cool-project" }));
       const boot = result.find((f) => f.path === ".claude/boot-prompt.txt");
       expect(boot).toBeDefined();
       expect(boot!.content).toContain("my-cool-project");
     });
 
-    it("has tracker-specific content for taskmaster", async () => {
+    it("demo: boot-prompt.txt has tracker-specific content for taskmaster", async () => {
       const result = await generateCommands(makeConfig({ taskTracker: "taskmaster" }));
       const boot = result.find((f) => f.path === ".claude/boot-prompt.txt");
       expect(boot).toBeDefined();
       expect(boot!.content).toContain("taskmaster");
     });
 
-    it("has tracker-specific content for beads", async () => {
+    it("demo: boot-prompt.txt has tracker-specific content for beads", async () => {
       const result = await generateCommands(makeConfig({ taskTracker: "beads" }));
       const boot = result.find((f) => f.path === ".claude/boot-prompt.txt");
       expect(boot).toBeDefined();
       expect(boot!.content).toContain("beads");
     });
 
-    it("references key commands", async () => {
+    it("demo: boot-prompt.txt references /dev-next and /review commands", async () => {
       const result = await generateCommands(makeConfig());
       const boot = result.find((f) => f.path === ".claude/boot-prompt.txt");
       expect(boot).toBeDefined();
@@ -106,7 +106,7 @@ describe("generateCommands", () => {
       expect(boot!.content).toContain("/review");
     });
 
-    it("no unresolved placeholders remain", async () => {
+    it("demo: boot-prompt.txt has no unresolved placeholders", async () => {
       const result = await generateCommands(makeConfig());
       const boot = result.find((f) => f.path === ".claude/boot-prompt.txt");
       expect(boot).toBeDefined();
@@ -115,7 +115,7 @@ describe("generateCommands", () => {
   });
 
   describe("no unresolved placeholders", () => {
-    it("dev-next.md has no unresolved placeholders", async () => {
+    it("demo: dev-next.md has no unresolved placeholders", async () => {
       const result = await generateCommands(makeConfig());
       const devNext = result.find((f) => f.path === ".claude/commands/dev-next.md");
       expect(devNext).toBeDefined();

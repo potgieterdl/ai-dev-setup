@@ -9,7 +9,7 @@ function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
 
 describe("generateHooks", () => {
   describe("output files", () => {
-    it("generates pre-commit.sh and settings.json", async () => {
+    it("smoke: generates pre-commit.sh and settings.json", async () => {
       const result = await generateHooks(makeConfig());
       const paths = result.map((f) => f.path);
 
@@ -17,41 +17,39 @@ describe("generateHooks", () => {
       expect(paths).toContain(".claude/settings.json");
     });
 
-    it("returns exactly 2 files", async () => {
+    it("smoke: returns exactly 2 files", async () => {
       const result = await generateHooks(makeConfig());
       expect(result).toHaveLength(2);
     });
   });
 
   describe("pre-commit.sh", () => {
-    it("is marked executable", async () => {
+    it("demo: pre-commit.sh is marked executable", async () => {
       const result = await generateHooks(makeConfig());
       const preCommit = result.find((f) => f.path === ".claude/hooks/pre-commit.sh");
       expect(preCommit).toBeDefined();
       expect(preCommit!.executable).toBe(true);
     });
 
-    it("contains --if-present flags for graceful degradation", async () => {
+    it("demo: pre-commit.sh contains --if-present flags for graceful degradation", async () => {
       const result = await generateHooks(makeConfig());
       const preCommit = result.find((f) => f.path === ".claude/hooks/pre-commit.sh");
       expect(preCommit).toBeDefined();
       expect(preCommit!.content).toContain("--if-present");
     });
 
-    it("contains all 5 quality gate steps in order", async () => {
+    it("demo: pre-commit.sh contains all 5 quality gate steps in correct order", async () => {
       const result = await generateHooks(makeConfig());
       const preCommit = result.find((f) => f.path === ".claude/hooks/pre-commit.sh");
       expect(preCommit).toBeDefined();
       const content = preCommit!.content;
 
-      // Verify all 5 steps exist
       expect(content).toContain("# 1. Format");
       expect(content).toContain("# 2. Lint");
       expect(content).toContain("# 3. Type-check");
       expect(content).toContain("# 4. Build");
       expect(content).toContain("# 5. Test");
 
-      // Verify order: Format before Lint before Type-check before Build before Test
       const formatIdx = content.indexOf("# 1. Format");
       const lintIdx = content.indexOf("# 2. Lint");
       const typeIdx = content.indexOf("# 3. Type-check");
@@ -64,7 +62,7 @@ describe("generateHooks", () => {
       expect(buildIdx).toBeLessThan(testIdx);
     });
 
-    it("starts with bash shebang", async () => {
+    it("smoke: pre-commit.sh starts with bash shebang", async () => {
       const result = await generateHooks(makeConfig());
       const preCommit = result.find((f) => f.path === ".claude/hooks/pre-commit.sh");
       expect(preCommit).toBeDefined();
@@ -72,7 +70,7 @@ describe("generateHooks", () => {
       expect(preCommit!.content).toContain("bash");
     });
 
-    it("uses set -euo pipefail for strict mode", async () => {
+    it("demo: pre-commit.sh uses set -euo pipefail for strict mode", async () => {
       const result = await generateHooks(makeConfig());
       const preCommit = result.find((f) => f.path === ".claude/hooks/pre-commit.sh");
       expect(preCommit).toBeDefined();
@@ -81,7 +79,7 @@ describe("generateHooks", () => {
   });
 
   describe("settings.json", () => {
-    it("contains PreToolUse hook matcher", async () => {
+    it("demo: settings.json contains PreToolUse hook matcher", async () => {
       const result = await generateHooks(makeConfig());
       const settings = result.find((f) => f.path === ".claude/settings.json");
       expect(settings).toBeDefined();
@@ -92,7 +90,7 @@ describe("generateHooks", () => {
       expect(parsed.hooks.PreToolUse).toHaveLength(1);
     });
 
-    it("hook matcher targets git commit", async () => {
+    it("demo: hook matcher targets git commit with correct path", async () => {
       const result = await generateHooks(makeConfig());
       const settings = result.find((f) => f.path === ".claude/settings.json");
       expect(settings).toBeDefined();
@@ -103,7 +101,7 @@ describe("generateHooks", () => {
       expect(hook.hook).toBe(".claude/hooks/pre-commit.sh");
     });
 
-    it("is valid JSON", async () => {
+    it("smoke: settings.json is valid JSON", async () => {
       const result = await generateHooks(makeConfig());
       const settings = result.find((f) => f.path === ".claude/settings.json");
       expect(settings).toBeDefined();
@@ -112,7 +110,7 @@ describe("generateHooks", () => {
   });
 
   describe("all file contents are non-empty", () => {
-    it("every generated file has content", async () => {
+    it("smoke: every generated file has content", async () => {
       const result = await generateHooks(makeConfig());
       for (const file of result) {
         expect(file.content.length).toBeGreaterThan(0);

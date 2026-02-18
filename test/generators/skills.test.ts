@@ -9,7 +9,7 @@ function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
 
 describe("generateSkills", () => {
   describe("skill files output", () => {
-    it("generates all 3 skill files", async () => {
+    it("smoke: generates all 3 skill files", async () => {
       const result = await generateSkills(makeConfig());
       const paths = result.map((f) => f.path);
 
@@ -18,22 +18,21 @@ describe("generateSkills", () => {
       expect(paths).toContain(".claude/skills/task-workflow.md");
     });
 
-    it("returns exactly 3 files", async () => {
+    it("smoke: returns exactly 3 files", async () => {
       const result = await generateSkills(makeConfig());
       expect(result).toHaveLength(3);
     });
   });
 
   describe("task-workflow.md tracker-specific content", () => {
-    it("contains task tracker reference for taskmaster", async () => {
+    it("demo: task-workflow.md contains task tracker reference", async () => {
       const result = await generateSkills(makeConfig({ taskTracker: "taskmaster" }));
       const workflow = result.find((f) => f.path === ".claude/skills/task-workflow.md");
       expect(workflow).toBeDefined();
-      // task-workflow.md doesn't have {{TASK_TRACKER}} placeholder but verify content
       expect(workflow!.content).toContain("task");
     });
 
-    it("contains workflow steps", async () => {
+    it("demo: task-workflow.md contains picking, implementing, and completing steps", async () => {
       const result = await generateSkills(makeConfig());
       const workflow = result.find((f) => f.path === ".claude/skills/task-workflow.md");
       expect(workflow).toBeDefined();
@@ -44,14 +43,14 @@ describe("generateSkills", () => {
   });
 
   describe("testing.md skill content", () => {
-    it("contains integration-first philosophy", async () => {
+    it("demo: testing.md skill covers integration-first philosophy", async () => {
       const result = await generateSkills(makeConfig());
       const testing = result.find((f) => f.path === ".claude/skills/testing.md");
       expect(testing).toBeDefined();
       expect(testing!.content).toContain("Integration-First");
     });
 
-    it("contains demo test pattern", async () => {
+    it("demo: testing.md skill contains demo test pattern", async () => {
       const result = await generateSkills(makeConfig());
       const testing = result.find((f) => f.path === ".claude/skills/testing.md");
       expect(testing).toBeDefined();
@@ -60,7 +59,7 @@ describe("generateSkills", () => {
   });
 
   describe("commit.md skill content", () => {
-    it("contains quality gate steps", async () => {
+    it("demo: commit.md skill contains all quality gate steps", async () => {
       const result = await generateSkills(makeConfig());
       const commit = result.find((f) => f.path === ".claude/skills/commit.md");
       expect(commit).toBeDefined();
@@ -70,7 +69,7 @@ describe("generateSkills", () => {
       expect(commit!.content).toContain("Test");
     });
 
-    it("contains commit message format", async () => {
+    it("demo: commit.md skill contains commit message format", async () => {
       const result = await generateSkills(makeConfig());
       const commit = result.find((f) => f.path === ".claude/skills/commit.md");
       expect(commit).toBeDefined();
@@ -79,7 +78,7 @@ describe("generateSkills", () => {
   });
 
   describe("all file contents are non-empty", () => {
-    it("every generated file has content", async () => {
+    it("smoke: every generated file has content", async () => {
       const result = await generateSkills(makeConfig());
       for (const file of result) {
         expect(file.content.length).toBeGreaterThan(0);
@@ -88,7 +87,7 @@ describe("generateSkills", () => {
   });
 
   describe("YAML frontmatter", () => {
-    it("all skills have description frontmatter", async () => {
+    it("smoke: all skills have description frontmatter", async () => {
       const result = await generateSkills(makeConfig());
       for (const file of result) {
         expect(file.content).toMatch(/^---\n/);

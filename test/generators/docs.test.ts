@@ -9,7 +9,7 @@ function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
 
 describe("generateDocs", () => {
   describe("core docs output", () => {
-    it("generates all 6 core doc files plus ADR template", async () => {
+    it("smoke: generates all 6 core doc files plus ADR template", async () => {
       const result = await generateDocs(makeConfig({ hasApiDocs: false }));
       const paths = result.map((f) => f.path);
 
@@ -22,13 +22,13 @@ describe("generateDocs", () => {
       expect(paths).toContain("docs/adr/adr_template.md");
     });
 
-    it("does NOT include docs/api.md when hasApiDocs is false", async () => {
+    it("smoke: does NOT include docs/api.md when hasApiDocs is false", async () => {
       const result = await generateDocs(makeConfig({ hasApiDocs: false }));
       const paths = result.map((f) => f.path);
       expect(paths).not.toContain("docs/api.md");
     });
 
-    it("returns exactly 7 files when hasApiDocs is false and tracker is not markdown", async () => {
+    it("smoke: returns exactly 7 files when hasApiDocs is false and tracker is not markdown", async () => {
       const result = await generateDocs(
         makeConfig({ hasApiDocs: false, taskTracker: "taskmaster" })
       );
@@ -37,13 +37,13 @@ describe("generateDocs", () => {
   });
 
   describe("API docs", () => {
-    it("includes docs/api.md when hasApiDocs is true", async () => {
+    it("demo: includes docs/api.md when hasApiDocs is true", async () => {
       const result = await generateDocs(makeConfig({ hasApiDocs: true }));
       const paths = result.map((f) => f.path);
       expect(paths).toContain("docs/api.md");
     });
 
-    it("returns 8 files when hasApiDocs is true and tracker is not markdown", async () => {
+    it("demo: returns 8 files when hasApiDocs is true and tracker is not markdown", async () => {
       const result = await generateDocs(
         makeConfig({ hasApiDocs: true, taskTracker: "taskmaster" })
       );
@@ -52,19 +52,19 @@ describe("generateDocs", () => {
   });
 
   describe("simple markdown task tracker", () => {
-    it("includes TASKS.md when taskTracker is markdown", async () => {
+    it("demo: includes TASKS.md when taskTracker is markdown", async () => {
       const result = await generateDocs(makeConfig({ taskTracker: "markdown" }));
       const paths = result.map((f) => f.path);
       expect(paths).toContain("TASKS.md");
     });
 
-    it("does NOT include TASKS.md when taskTracker is taskmaster", async () => {
+    it("demo: does NOT include TASKS.md when taskTracker is taskmaster", async () => {
       const result = await generateDocs(makeConfig({ taskTracker: "taskmaster" }));
       const paths = result.map((f) => f.path);
       expect(paths).not.toContain("TASKS.md");
     });
 
-    it("does NOT include TASKS.md when taskTracker is beads", async () => {
+    it("demo: does NOT include TASKS.md when taskTracker is beads", async () => {
       const result = await generateDocs(makeConfig({ taskTracker: "beads" }));
       const paths = result.map((f) => f.path);
       expect(paths).not.toContain("TASKS.md");
@@ -72,10 +72,9 @@ describe("generateDocs", () => {
   });
 
   describe("template placeholder substitution", () => {
-    it("replaces {{PROJECT_NAME}} in all generated content", async () => {
+    it("demo: replaces {{PROJECT_NAME}} in prd.md and architecture.md", async () => {
       const result = await generateDocs(makeConfig({ projectName: "my-test-app" }));
 
-      // Check a few key files for the replacement
       const prd = result.find((f) => f.path === "docs/prd.md");
       expect(prd).toBeDefined();
       expect(prd!.content).toContain("my-test-app");
@@ -87,7 +86,7 @@ describe("generateDocs", () => {
       expect(arch!.content).not.toContain("{{PROJECT_NAME}}");
     });
 
-    it("replaces {{ARCHITECTURE}} in architecture.md", async () => {
+    it("demo: replaces {{ARCHITECTURE}} in architecture.md", async () => {
       const result = await generateDocs(makeConfig({ architecture: "3-tier" }));
       const arch = result.find((f) => f.path === "docs/architecture.md");
       expect(arch).toBeDefined();
@@ -95,16 +94,15 @@ describe("generateDocs", () => {
       expect(arch!.content).not.toContain("{{ARCHITECTURE}}");
     });
 
-    it("replaces {{DATE}} in prd.md with ISO date format", async () => {
+    it("demo: replaces {{DATE}} in prd.md with ISO date format", async () => {
       const result = await generateDocs(makeConfig());
       const prd = result.find((f) => f.path === "docs/prd.md");
       expect(prd).toBeDefined();
-      // Should have a date like YYYY-MM-DD
       expect(prd!.content).toMatch(/\d{4}-\d{2}-\d{2}/);
       expect(prd!.content).not.toContain("{{DATE}}");
     });
 
-    it("replaces {{PROJECT_NAME}} in TASKS.md when using markdown tracker", async () => {
+    it("demo: replaces {{PROJECT_NAME}} in TASKS.md for markdown tracker", async () => {
       const result = await generateDocs(
         makeConfig({ taskTracker: "markdown", projectName: "cool-project" })
       );
@@ -116,19 +114,19 @@ describe("generateDocs", () => {
   });
 
   describe("ADR template", () => {
-    it("is always included in output", async () => {
+    it("smoke: ADR template is always included in output", async () => {
       const result = await generateDocs(makeConfig());
       const adr = result.find((f) => f.path === "docs/adr/adr_template.md");
       expect(adr).toBeDefined();
     });
 
-    it("uses NNN and Decision Title as placeholders", async () => {
+    it("demo: ADR template uses NNN and Decision Title as placeholders", async () => {
       const result = await generateDocs(makeConfig());
       const adr = result.find((f) => f.path === "docs/adr/adr_template.md");
       expect(adr!.content).toContain("ADR-NNN: Decision Title");
     });
 
-    it("replaces {{DATE}} in ADR template", async () => {
+    it("demo: ADR template replaces {{DATE}} with ISO date", async () => {
       const result = await generateDocs(makeConfig());
       const adr = result.find((f) => f.path === "docs/adr/adr_template.md");
       expect(adr!.content).not.toContain("{{DATE}}");
@@ -137,14 +135,14 @@ describe("generateDocs", () => {
   });
 
   describe("doc_format.md", () => {
-    it("contains no placeholders (static content)", async () => {
+    it("smoke: doc_format.md contains no unresolved placeholders", async () => {
       const result = await generateDocs(makeConfig());
       const docFormat = result.find((f) => f.path === "docs/doc_format.md");
       expect(docFormat).toBeDefined();
       expect(docFormat!.content).not.toMatch(/\{\{\w+\}\}/);
     });
 
-    it("contains TLDR section", async () => {
+    it("smoke: doc_format.md contains TLDR section", async () => {
       const result = await generateDocs(makeConfig());
       const docFormat = result.find((f) => f.path === "docs/doc_format.md");
       expect(docFormat!.content).toContain("TLDR");
@@ -152,7 +150,7 @@ describe("generateDocs", () => {
   });
 
   describe("all file contents are non-empty", () => {
-    it("every generated file has content", async () => {
+    it("smoke: every generated file has content", async () => {
       const result = await generateDocs(makeConfig({ hasApiDocs: true, taskTracker: "markdown" }));
       for (const file of result) {
         expect(file.content.length).toBeGreaterThan(0);

@@ -7,18 +7,18 @@ function makeConfig(overrides: Partial<ReturnType<typeof defaultConfig>> = {}) {
 }
 
 describe("generateMcpJson", () => {
-  it("returns exactly 2 FileDescriptors", () => {
+  it("smoke: returns exactly 2 FileDescriptors", () => {
     const result = generateMcpJson(makeConfig());
     expect(result).toHaveLength(2);
   });
 
-  it("returns .mcp.json as first file and .vscode/mcp.json as second", () => {
+  it("smoke: returns .mcp.json as first file and .vscode/mcp.json as second", () => {
     const result = generateMcpJson(makeConfig());
     expect(result[0].path).toBe(".mcp.json");
     expect(result[1].path).toBe(".vscode/mcp.json");
   });
 
-  it("produces valid JSON for both files", () => {
+  it("smoke: produces valid JSON for both files", () => {
     const result = generateMcpJson(makeConfig());
     for (const file of result) {
       expect(() => JSON.parse(file.content)).not.toThrow();
@@ -26,20 +26,20 @@ describe("generateMcpJson", () => {
   });
 
   describe(".mcp.json (Claude Code format)", () => {
-    it("uses 'mcpServers' as root key", () => {
+    it("demo: uses mcpServers as root key for Claude Code", () => {
       const result = generateMcpJson(makeConfig());
       const parsed = JSON.parse(result[0].content);
       expect(parsed).toHaveProperty("mcpServers");
       expect(Object.keys(parsed)).toEqual(["mcpServers"]);
     });
 
-    it("includes taskmaster-ai when taskmaster is selected", () => {
+    it("demo: taskmaster config includes taskmaster-ai entry", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[0].content);
       expect(parsed.mcpServers).toHaveProperty("taskmaster-ai");
     });
 
-    it("includes correct command and args for taskmaster", () => {
+    it("demo: taskmaster entry has correct npx command and args", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[0].content);
       const tm = parsed.mcpServers["taskmaster-ai"];
@@ -47,7 +47,7 @@ describe("generateMcpJson", () => {
       expect(tm.args).toEqual(["-y", "task-master-ai"]);
     });
 
-    it("includes env vars as-is from registry for taskmaster", () => {
+    it("demo: taskmaster entry includes env vars as-is from registry", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[0].content);
       const tm = parsed.mcpServers["taskmaster-ai"];
@@ -57,21 +57,21 @@ describe("generateMcpJson", () => {
       expect(tm.env.PERPLEXITY_API_KEY).toBe("${PERPLEXITY_API_KEY}");
     });
 
-    it("does NOT include cwd field", () => {
+    it("demo: Claude Code format does NOT include cwd field", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[0].content);
       const tm = parsed.mcpServers["taskmaster-ai"];
       expect(tm).not.toHaveProperty("cwd");
     });
 
-    it("omits env block for servers with no env vars", () => {
+    it("demo: servers with no env vars omit env block", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["context7"] }));
       const parsed = JSON.parse(result[0].content);
       const server = parsed.mcpServers["context7"];
       expect(server).not.toHaveProperty("env");
     });
 
-    it("includes multiple servers when multiple are selected", () => {
+    it("demo: multiple selected MCPs produce multiple entries", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster", "beads"] }));
       const parsed = JSON.parse(result[0].content);
       expect(Object.keys(parsed.mcpServers)).toHaveLength(2);
@@ -79,7 +79,7 @@ describe("generateMcpJson", () => {
       expect(parsed.mcpServers).toHaveProperty("beads");
     });
 
-    it("returns empty mcpServers for empty selection", () => {
+    it("smoke: empty MCP selection returns empty mcpServers", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: [] }));
       const parsed = JSON.parse(result[0].content);
       expect(Object.keys(parsed.mcpServers)).toHaveLength(0);
@@ -87,35 +87,35 @@ describe("generateMcpJson", () => {
   });
 
   describe(".vscode/mcp.json (VS Code format)", () => {
-    it("uses 'servers' as root key", () => {
+    it("demo: VS Code config uses servers as root key", () => {
       const result = generateMcpJson(makeConfig());
       const parsed = JSON.parse(result[1].content);
       expect(parsed).toHaveProperty("servers");
       expect(Object.keys(parsed)).toEqual(["servers"]);
     });
 
-    it("includes cwd field with ${workspaceFolder}", () => {
+    it("demo: VS Code format includes cwd with ${workspaceFolder}", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[1].content);
       const tm = parsed.servers["taskmaster-ai"];
       expect(tm.cwd).toBe("${workspaceFolder}");
     });
 
-    it("includes envFile field with ${workspaceFolder}/.env", () => {
+    it("demo: VS Code format includes envFile with ${workspaceFolder}/.env", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[1].content);
       const tm = parsed.servers["taskmaster-ai"];
       expect(tm.envFile).toBe("${workspaceFolder}/.env");
     });
 
-    it("includes type: 'stdio'", () => {
+    it("demo: VS Code format includes type stdio", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[1].content);
       const tm = parsed.servers["taskmaster-ai"];
       expect(tm.type).toBe("stdio");
     });
 
-    it("env values use ${env:VAR_NAME} format", () => {
+    it("demo: VS Code env values use ${env:VAR_NAME} format", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[1].content);
       const tm = parsed.servers["taskmaster-ai"];
@@ -125,14 +125,14 @@ describe("generateMcpJson", () => {
       expect(tm.env.TASK_MASTER_TOOLS).toBe("${env:TASK_MASTER_TOOLS}");
     });
 
-    it("omits env block for servers with no env vars", () => {
+    it("demo: VS Code format omits env block for servers with no env vars", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["beads"] }));
       const parsed = JSON.parse(result[1].content);
       const server = parsed.servers["beads"];
       expect(server).not.toHaveProperty("env");
     });
 
-    it("includes multiple servers when multiple are selected", () => {
+    it("demo: VS Code format includes multiple servers when selected", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster", "beads"] }));
       const parsed = JSON.parse(result[1].content);
       expect(Object.keys(parsed.servers)).toHaveLength(2);
@@ -142,7 +142,7 @@ describe("generateMcpJson", () => {
   });
 
   describe("all five registry servers", () => {
-    it("generates entries for all 5 servers when all are selected", () => {
+    it("demo: all 5 MCP servers generate entries in both formats", () => {
       const allMcps = ["taskmaster", "beads", "context7", "browsermcp", "sequential-thinking"];
       const result = generateMcpJson(makeConfig({ selectedMcps: allMcps }));
 
@@ -156,7 +156,7 @@ describe("generateMcpJson", () => {
       expect(Object.keys(claudeCode.mcpServers).sort()).toEqual(Object.keys(vscode.servers).sort());
     });
 
-    it("maps server names to claudeMcpName correctly", () => {
+    it("demo: server names map to claudeMcpName correctly", () => {
       const allMcps = ["taskmaster", "beads", "context7", "browsermcp", "sequential-thinking"];
       const result = generateMcpJson(makeConfig({ selectedMcps: allMcps }));
       const parsed = JSON.parse(result[0].content);
@@ -170,7 +170,7 @@ describe("generateMcpJson", () => {
   });
 
   describe("ignores unknown server names", () => {
-    it("skips servers not in the registry", () => {
+    it("demo: unknown server names are silently skipped", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster", "nonexistent"] }));
       const parsed = JSON.parse(result[0].content);
       expect(Object.keys(parsed.mcpServers)).toHaveLength(1);

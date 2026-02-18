@@ -21,16 +21,16 @@ Created `test/integration/full-run.test.ts` — a comprehensive integration test
 
 ### Test coverage organized by concern:
 
-| Area | Tests | What's verified |
-|---|---|---|
-| Smoke (non-interactive) | 3 | Core files created, devcontainer generated, clean exit |
-| MCP configuration | 5 | Valid JSON schemas, correct package names, env vars, all 5 servers |
-| Task tracker content | 4 | Taskmaster/beads/markdown CLAUDE.md instructions, CLAUDE_MCP.md |
-| Document scaffolding | 6 | All doc templates, ADR directory, API docs conditional logic |
-| Rules/skills/hooks | 7 | Rule frontmatter, conditional rules, executable hooks, commands |
-| Idempotency | 3 | Same output across repeated runs |
-| CLI lifecycle commands | 5 | post-create, post-start, welcome banner, task summary |
-| CLAUDE.md quality | 4 | Quality gate, doc imports, MCP references, rules references |
+| Area                    | Tests | What's verified                                                    |
+| ----------------------- | ----- | ------------------------------------------------------------------ |
+| Smoke (non-interactive) | 3     | Core files created, devcontainer generated, clean exit             |
+| MCP configuration       | 5     | Valid JSON schemas, correct package names, env vars, all 5 servers |
+| Task tracker content    | 4     | Taskmaster/beads/markdown CLAUDE.md instructions, CLAUDE_MCP.md    |
+| Document scaffolding    | 6     | All doc templates, ADR directory, API docs conditional logic       |
+| Rules/skills/hooks      | 7     | Rule frontmatter, conditional rules, executable hooks, commands    |
+| Idempotency             | 3     | Same output across repeated runs                                   |
+| CLI lifecycle commands  | 5     | post-create, post-start, welcome banner, task summary              |
+| CLAUDE.md quality       | 4     | Quality gate, doc imports, MCP references, rules references        |
 
 ### Key design choices:
 

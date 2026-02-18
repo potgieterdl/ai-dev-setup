@@ -9,14 +9,14 @@ function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
 
 describe("generateClaudeMd", () => {
   describe("file output structure", () => {
-    it("returns CLAUDE.md and CLAUDE_MCP.md when MCPs are selected", () => {
+    it("smoke: returns CLAUDE.md and CLAUDE_MCP.md when MCPs are selected", () => {
       const result = generateClaudeMd(makeConfig({ selectedMcps: ["taskmaster"] }));
       expect(result).toHaveLength(2);
       expect(result[0].path).toBe("CLAUDE.md");
       expect(result[1].path).toBe("CLAUDE_MCP.md");
     });
 
-    it("returns only CLAUDE.md when no MCPs are selected", () => {
+    it("smoke: returns only CLAUDE.md when no MCPs are selected", () => {
       const result = generateClaudeMd(makeConfig({ selectedMcps: [] }));
       expect(result).toHaveLength(1);
       expect(result[0].path).toBe("CLAUDE.md");
@@ -24,58 +24,58 @@ describe("generateClaudeMd", () => {
   });
 
   describe("task tracker: taskmaster", () => {
-    it("includes @./.taskmaster/CLAUDE.md import", () => {
+    it("demo: taskmaster config includes @./.taskmaster/CLAUDE.md import", () => {
       const result = generateClaudeMd(makeConfig({ taskTracker: "taskmaster" }));
       expect(result[0].content).toContain("@./.taskmaster/CLAUDE.md");
     });
 
-    it("includes task-master next command", () => {
+    it("demo: taskmaster config includes task-master next command", () => {
       const result = generateClaudeMd(makeConfig({ taskTracker: "taskmaster" }));
       expect(result[0].content).toContain("task-master next");
     });
 
-    it("includes task-master set-status command", () => {
+    it("demo: taskmaster config includes task-master set-status command", () => {
       const result = generateClaudeMd(makeConfig({ taskTracker: "taskmaster" }));
       expect(result[0].content).toContain("task-master set-status");
     });
 
-    it("includes task-master expand command", () => {
+    it("demo: taskmaster config includes task-master expand command", () => {
       const result = generateClaudeMd(makeConfig({ taskTracker: "taskmaster" }));
       expect(result[0].content).toContain("task-master expand");
     });
   });
 
   describe("task tracker: beads", () => {
-    it("includes beads_ready tool reference", () => {
+    it("demo: beads config includes beads_ready tool reference", () => {
       const result = generateClaudeMd(makeConfig({ taskTracker: "beads" }));
       expect(result[0].content).toContain("beads_ready");
     });
 
-    it("includes bd sync command", () => {
+    it("demo: beads config includes bd sync command", () => {
       const result = generateClaudeMd(makeConfig({ taskTracker: "beads" }));
       expect(result[0].content).toContain("bd sync");
     });
 
-    it("includes bd show command", () => {
+    it("demo: beads config includes bd show command", () => {
       const result = generateClaudeMd(makeConfig({ taskTracker: "beads" }));
       expect(result[0].content).toContain("bd show");
     });
   });
 
   describe("task tracker: markdown", () => {
-    it("references TASKS.md", () => {
+    it("demo: markdown tracker references TASKS.md", () => {
       const result = generateClaudeMd(makeConfig({ taskTracker: "markdown" }));
       expect(result[0].content).toContain("TASKS.md");
     });
 
-    it("includes checkbox syntax guidance", () => {
+    it("demo: markdown tracker includes checkbox syntax guidance", () => {
       const result = generateClaudeMd(makeConfig({ taskTracker: "markdown" }));
       expect(result[0].content).toContain("[x]");
     });
   });
 
   describe("doc imports", () => {
-    it("includes @docs/ imports when generateDocs is true", () => {
+    it("demo: includes @docs/ imports when generateDocs is true", () => {
       const result = generateClaudeMd(makeConfig({ generateDocs: true }));
       expect(result[0].content).toContain("@docs/prd.md");
       expect(result[0].content).toContain("@docs/architecture.md");
@@ -84,37 +84,37 @@ describe("generateClaudeMd", () => {
       expect(result[0].content).toContain("@docs/doc_format.md");
     });
 
-    it("does NOT include @docs/ imports when generateDocs is false", () => {
+    it("demo: does NOT include @docs/ imports when generateDocs is false", () => {
       const result = generateClaudeMd(makeConfig({ generateDocs: false }));
       expect(result[0].content).not.toContain("@docs/prd.md");
       expect(result[0].content).not.toContain("@docs/architecture.md");
     });
 
-    it("includes @docs/api.md when hasApiDocs is true", () => {
+    it("demo: includes @docs/api.md when hasApiDocs is true", () => {
       const result = generateClaudeMd(makeConfig({ generateDocs: true, hasApiDocs: true }));
       expect(result[0].content).toContain("@docs/api.md");
     });
 
-    it("does NOT include @docs/api.md when hasApiDocs is false", () => {
+    it("demo: does NOT include @docs/api.md when hasApiDocs is false", () => {
       const result = generateClaudeMd(makeConfig({ generateDocs: true, hasApiDocs: false }));
       expect(result[0].content).not.toContain("@docs/api.md");
     });
   });
 
   describe("rules section", () => {
-    it("references .claude/rules/ when generateRules is true", () => {
+    it("demo: references .claude/rules/ when generateRules is true", () => {
       const result = generateClaudeMd(makeConfig({ generateRules: true }));
       expect(result[0].content).toContain(".claude/rules/");
     });
 
-    it("does NOT reference .claude/rules/ when generateRules is false", () => {
+    it("demo: does NOT reference .claude/rules/ when generateRules is false", () => {
       const result = generateClaudeMd(makeConfig({ generateRules: false }));
       expect(result[0].content).not.toContain(".claude/rules/");
     });
   });
 
   describe("quality gate", () => {
-    it("includes the quality gate section", () => {
+    it("demo: includes complete quality gate section with all 5 steps", () => {
       const result = generateClaudeMd(makeConfig());
       expect(result[0].content).toContain("Quality Gate");
       expect(result[0].content).toContain("npm run format");
@@ -126,21 +126,21 @@ describe("generateClaudeMd", () => {
   });
 
   describe("MCP section in CLAUDE.md", () => {
-    it("includes MCP section with @CLAUDE_MCP.md reference when MCPs are selected", () => {
+    it("demo: MCP section includes @CLAUDE_MCP.md reference and server names", () => {
       const result = generateClaudeMd(makeConfig({ selectedMcps: ["taskmaster", "context7"] }));
       expect(result[0].content).toContain("@CLAUDE_MCP.md");
       expect(result[0].content).toContain("taskmaster-ai");
       expect(result[0].content).toContain("context7");
     });
 
-    it("does NOT include MCP section when no MCPs are selected", () => {
+    it("demo: does NOT include MCP section when no MCPs are selected", () => {
       const result = generateClaudeMd(makeConfig({ selectedMcps: [] }));
       expect(result[0].content).not.toContain("@CLAUDE_MCP.md");
     });
   });
 
   describe("CLAUDE_MCP.md content", () => {
-    it("lists all selected servers with their descriptions and packages", () => {
+    it("demo: CLAUDE_MCP.md lists all selected servers with descriptions and packages", () => {
       const result = generateClaudeMd(makeConfig({ selectedMcps: ["taskmaster", "context7"] }));
       const mcpFile = result.find((f) => f.path === "CLAUDE_MCP.md");
       expect(mcpFile).toBeDefined();
@@ -150,13 +150,13 @@ describe("generateClaudeMd", () => {
       expect(mcpFile!.content).toContain("@upstash/context7-mcp");
     });
 
-    it("includes MCP Servers Available heading", () => {
+    it("smoke: CLAUDE_MCP.md includes MCP Servers Available heading", () => {
       const result = generateClaudeMd(makeConfig({ selectedMcps: ["taskmaster"] }));
       const mcpFile = result.find((f) => f.path === "CLAUDE_MCP.md");
       expect(mcpFile!.content).toContain("# MCP Servers Available");
     });
 
-    it("includes separator between multiple servers", () => {
+    it("demo: CLAUDE_MCP.md includes separator between multiple servers", () => {
       const result = generateClaudeMd(makeConfig({ selectedMcps: ["taskmaster", "beads"] }));
       const mcpFile = result.find((f) => f.path === "CLAUDE_MCP.md");
       expect(mcpFile!.content).toContain("---");
@@ -164,7 +164,7 @@ describe("generateClaudeMd", () => {
   });
 
   describe("header", () => {
-    it("starts with # Project Instructions for Claude Code", () => {
+    it("smoke: CLAUDE.md starts with # Project Instructions for Claude Code", () => {
       const result = generateClaudeMd(makeConfig());
       expect(result[0].content).toMatch(/^# Project Instructions for Claude Code/);
     });
