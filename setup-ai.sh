@@ -2,7 +2,26 @@
 set -euo pipefail
 
 # =============================================================================
+# ⚠️  DEPRECATED — This script has been replaced by the TypeScript CLI `ai-init`.
+#
+# The TypeScript CLI provides the same lifecycle commands plus new features:
+#   - Interactive wizard with task tracker, architecture, and doc scaffolding
+#   - Path-scoped rules, skills, and hooks generation
+#   - Claude Code headless audit of generated files
+#   - Agent teams opt-in configuration
+#
+# Migration:
+#   Install:  curl -fsSL https://raw.githubusercontent.com/potgieterdl/ai-helper-tools/main/install.sh | bash
+#   Usage:    ai-init                  # Interactive wizard (replaces ./setup-ai.sh)
+#             ai-init on-create        # Replaces ./setup-ai.sh on-create
+#             ai-init post-create      # Replaces ./setup-ai.sh post-create
+#             ai-init post-start       # Replaces ./setup-ai.sh post-start
+#
+# This file is kept for reference only. It will be removed in a future release.
+# =============================================================================
+#
 # setup-ai.sh — AI Development Environment Bootstrap for GitHub Codespaces
+# (LEGACY — see deprecation notice above)
 #
 # Single-file bootstrap: copy into any new Codespace, chmod +x, and run.
 # Creates devcontainer config so future rebuilds are automatic.

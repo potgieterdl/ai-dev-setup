@@ -1465,7 +1465,7 @@
           "17",
           "19"
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1474,7 +1474,8 @@
             "dependencies": [],
             "details": "Read /workspaces/ai-dev-setup/README.md in full. Check each required section against the task specification:\n1. One-line description in header\n2. Badges (license, node version) — note: current README is missing badges; add them if absent\n3. Single-line curl install command prominently in Quick Install section\n4. Usage section covers: `ai-init`, `ai-init --non-interactive`, `ai-init on-create`, `ai-init post-create`, `ai-init post-start`\n5. What Gets Generated table lists all 9 entries: CLAUDE.md, .mcp.json, .vscode/mcp.json, docs/, .claude/rules/, .claude/skills/, .claude/hooks/, .claude/commands/, .devcontainer/devcontainer.json\n6. Environment variables table covers all SETUP_AI_* vars\n7. Task tracker comparison table (Task Master vs Beads vs Markdown)\n8. Development section with git clone, npm ci, npm run build, npm test, npm run dev -- --help\n9. Total line count ≤ 200\n\nIf any section is missing or incomplete, add/fix it. If badges are absent, add shield.io badges for license and node version requirements.",
             "status": "pending",
-            "testStrategy": "Manually verify each section is present. Run `wc -l README.md` to confirm line count ≤ 200. Grep for the curl install command, each subcommand, and each table header."
+            "testStrategy": "Manually verify each section is present. Run `wc -l README.md` to confirm line count ≤ 200. Grep for the curl install command, each subcommand, and each table header.",
+            "parentId": "undefined"
           },
           {
             "id": 2,
@@ -1485,7 +1486,8 @@
             ],
             "details": "After the project title and one-line description in README.md, add markdown badge images using shields.io:\n\n```markdown\n![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)\n![Node.js: >=20](https://img.shields.io/badge/node-%3E%3D20-brightgreen)\n```\n\nPlace badges between the title/tagline and the Table of Contents. Verify the badge URLs are standard shields.io static badges (no external API calls needed at render time). Keep the total line count under 200 after adding badges. Check package.json for the actual license field to ensure the badge label matches.",
             "status": "pending",
-            "testStrategy": "Confirm both badge lines appear in README.md before the Table of Contents. Confirm total line count remains ≤ 200. Check that badge markdown syntax is valid (no broken image syntax)."
+            "testStrategy": "Confirm both badge lines appear in README.md before the Table of Contents. Confirm total line count remains ≤ 200. Check that badge markdown syntax is valid (no broken image syntax).",
+            "parentId": "undefined"
           },
           {
             "id": 3,
@@ -1496,7 +1498,8 @@
             ],
             "details": "Run the following commands in sequence from /workspaces/ai-dev-setup, fixing any issues found:\n\n1. `npm run format` — Prettier formats all files including README.md if configured\n2. `npm run lint` — ESLint with auto-fix; fix any reported errors (warnings acceptable)\n3. `npm run typecheck` — `tsc --noEmit`; fix any type errors\n\nFor each command:\n- If it exits 0, proceed to next step\n- If it exits non-zero, read the error output, fix the issues, and re-run the command\n\nNote: Prettier typically does not format .md files unless configured to do so; if format does not touch README.md, that is acceptable. The primary goal is ensuring the JS/TS codebase is clean.",
             "status": "pending",
-            "testStrategy": "All three commands must exit with code 0. No unfixed ESLint errors. No TypeScript compilation errors."
+            "testStrategy": "All three commands must exit with code 0. No unfixed ESLint errors. No TypeScript compilation errors.",
+            "parentId": "undefined"
           },
           {
             "id": 4,
@@ -1507,7 +1510,8 @@
             ],
             "details": "Run from /workspaces/ai-dev-setup:\n\n1. `npm run build` — compile TypeScript to dist/; verify exit code 0 and no errors in stdout/stderr\n2. `npm test` — run the full Vitest suite (392+ tests); verify all tests pass\n\nIf build fails:\n- Read the compiler errors\n- Fix the TypeScript issues\n- Re-run `npm run build`\n\nIf tests fail:\n- Identify which test file and test name failed\n- Read the failing test and the source it tests\n- Fix the implementation or test as appropriate\n- Re-run `npm test`\n\nDo not mark this subtask done until both commands exit 0 with no failures.",
             "status": "pending",
-            "testStrategy": "Build exit code 0. All Vitest tests pass (0 failures). Test summary output shows passing count matches expected 392+ tests."
+            "testStrategy": "Build exit code 0. All Vitest tests pass (0 failures). Test summary output shows passing count matches expected 392+ tests.",
+            "parentId": "undefined"
           },
           {
             "id": 5,
@@ -1518,10 +1522,11 @@
             ],
             "details": "Using the Task Master MCP or CLI:\n\n1. Call `update_subtask` on task 22 (or the appropriate subtask) to log:\n   - Confirmation that README.md matches all task requirements\n   - Which sections were already present vs what was added (badges)\n   - Line count of final README.md\n   - Results of format, lint, typecheck, build, and test runs\n   - Any issues encountered and how they were resolved\n\n2. Call `set_task_status --id=22 --status=done` to mark the parent task complete\n\nCommand sequence:\n```bash\ntask-master update-subtask --id=22 --prompt=\"README verified: all sections present including badges. Format/lint/typecheck/build/test all passed. Final line count: N lines.\"\ntask-master set-status --id=22 --status=done\n```",
             "status": "pending",
-            "testStrategy": "Task 22 status shows 'done' in `task-master list` output. The subtask log contains a summary of all checks performed."
+            "testStrategy": "Task 22 status shows 'done' in `task-master list` output. The subtask log contains a summary of all checks performed.",
+            "parentId": "undefined"
           }
         ],
-        "updatedAt": "2026-02-18T08:04:34.082Z"
+        "updatedAt": "2026-02-18T08:07:05.947Z"
       },
       {
         "id": 23,
@@ -1535,19 +1540,88 @@
           "17",
           "19"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Audit Bash-to-TypeScript Function Mapping",
+            "description": "Systematically compare each bash function in setup-ai.sh against its TypeScript equivalent, documenting gaps and conceptual differences.",
+            "dependencies": [],
+            "details": "Read setup-ai.sh in full and map each function to its TypeScript equivalent using the provided mapping table. For each pair, verify: (1) select_mcps() vs wizard.ts Step 1 — both support env var SETUP_AI_MCPS, non-interactive fallback, and always-required MCP inclusion; (2) write_mcp_json() vs generators/mcp-json.ts — both produce .mcp.json and .vscode/mcp.json with correct server configs; (3) write_claude_md() vs generators/claude-md.ts — both emit the <!-- SETUP-AI-MANAGED --> header; (4) write_devcontainer_json() vs generators/devcontainer.ts — both synthesize secrets from selected MCP env vars; (5) phase_on_create() vs phases/on-create.ts — both install claude-code and task-master-ai globally; (6) phase_post_create() vs phases/post-create.ts — both call generators then optionally audit; (7) phase_post_start() vs phases/post-start.ts — both sync .env and print welcome banner. Document each gap as either 'acceptable divergence' (new TS has richer functionality) or 'missing behaviour' (bash does something TS does not). Write findings as a markdown checklist in docs/bash-ts-audit.md (or update_subtask notes).",
+            "status": "pending",
+            "testStrategy": "Manual review with side-by-side diff of bash and TypeScript logic; confirm all 'missing behaviour' items are either implemented or explicitly out-of-scope."
+          },
+          {
+            "id": 2,
+            "title": "Verify MCP Config Parity Between Bash and TypeScript Output",
+            "description": "Run both setup-ai.sh and ai-init with identical MCP selections and diff the resulting .mcp.json files to confirm conceptual equivalence.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a test script or use the integration test harness to: (1) Invoke bash script in a temp directory with SETUP_AI_MCPS=taskmaster,context7 SETUP_AI_NONINTERACTIVE=1 and capture the generated .mcp.json; (2) Invoke ai-init (or run generateMcpJson() directly in a unit test) with the same selections and capture its .mcp.json; (3) Diff the two outputs focusing on: server names (mcpServers keys), command/args/env structure, env var placeholder syntax (${VAR} vs ${localEnv:VAR} etc.), and presence of all selected servers. Note any intentional differences (e.g., TS adds .vscode/mcp.json which bash also does). Document discrepancies. Fix any unintentional gaps in src/generators/mcp-json.ts. Also verify that the existing project's .mcp.json (generated by bash previously) is compatible with what the TS generator would produce for the same inputs.",
+            "status": "pending",
+            "testStrategy": "Add or update test/generators/mcp-json.test.ts with a parity test that asserts generated output matches known-good bash-generated fixture. Run npm test and confirm it passes."
+          },
+          {
+            "id": 3,
+            "title": "Update devcontainer.json Lifecycle Commands to Use ai-init",
+            "description": "Replace the three bash setup-ai.sh lifecycle calls in .devcontainer/devcontainer.json with equivalent ai-init commands.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Edit .devcontainer/devcontainer.json to change: (1) onCreateCommand from 'bash setup-ai.sh on-create' to 'ai-init on-create'; (2) postCreateCommand from 'bash setup-ai.sh post-create' to 'ai-init post-create'; (3) postStartCommand from 'bash setup-ai.sh post-start' to 'ai-init post-start'. Before making changes, confirm that ai-init is installed globally (added to PATH via install.sh symlink). Add a fallback for environments where ai-init may not yet be installed: consider using 'npx --yes . on-create' or keeping a conditional in the command. Verify that the generated devcontainer.json from generateDevcontainer() also uses ai-init commands (not setup-ai.sh) so newly created projects get the correct commands. Update src/generators/devcontainer.ts if it still references setup-ai.sh in its output template. Run the devcontainer generator test to confirm.",
+            "status": "pending",
+            "testStrategy": "Run test/generators/devcontainer.test.ts and confirm lifecycle commands reference ai-init. Manually inspect updated .devcontainer/devcontainer.json to confirm three commands are updated. Run npm test to ensure no regressions."
+          },
+          {
+            "id": 4,
+            "title": "Add Deprecation Notice to setup-ai.sh",
+            "description": "Add a clear deprecation notice at the top of setup-ai.sh directing users to ai-init, while keeping the script fully functional as a reference implementation.",
+            "dependencies": [
+              3
+            ],
+            "details": "Edit setup-ai.sh to add a deprecation block near the top (after the shebang and license header but before any execution logic). The notice should: (1) Print a visible warning to stderr when the script is invoked: 'WARNING: setup-ai.sh is deprecated. Please use ai-init instead. See README for migration guide.'; (2) Include a comment block explaining that this file is kept as reference implementation and should not be modified; (3) Point to the TypeScript equivalent location (src/cli.ts) for developers who need to understand the logic; (4) Add a DEPRECATED marker at line 1 as a comment for grep discoverability. The warning should only display if the script is run directly (not when sourced), detected via [ \"${BASH_SOURCE[0]}\" = \"$0\" ]. Keep all existing functionality intact — do not remove or alter any bash functions.",
+            "status": "pending",
+            "testStrategy": "Run 'bash setup-ai.sh --help' or any valid command and verify the deprecation warning appears on stderr. Confirm the script still functions correctly for all three phases. Check that DEPRECATED comment is visible via grep."
+          },
+          {
+            "id": 5,
+            "title": "Write Integration Test for Bash Parity Verification",
+            "description": "Create or update an integration test that validates the TypeScript CLI produces conceptually equivalent output to setup-ai.sh for the core use case.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Create test/integration/bash-parity.test.ts (or update test/integration/full-run.test.ts) with the following test cases: (1) 'MCP config parity' — run generateMcpJson() with taskmaster selected, assert the output .mcp.json structure matches the known-good bash-generated fixture in test/fixtures/bash-mcp.json (create this fixture from the current bash-generated .mcp.json); (2) 'CLAUDE.md header preservation' — run generateClaudeMd() and assert the <!-- SETUP-AI-MANAGED --> header is present; (3) 'Devcontainer lifecycle commands' — run generateDevcontainer() and assert onCreateCommand/postCreateCommand/postStartCommand reference ai-init, not setup-ai.sh; (4) 'Phase sequence equivalence' — in a temp directory, run ai-init post-create in non-interactive mode (SETUP_AI_NONINTERACTIVE=1) and assert .mcp.json, CLAUDE.md, and .devcontainer/devcontainer.json are all created; (5) 'Post-start .env sync' — mock Codespace env vars and verify post-start.ts writes correct .env content. Use beforeEach/afterEach to clean up temp directories. All tests should use Vitest and follow the existing test patterns in the codebase.",
+            "status": "pending",
+            "testStrategy": "Run npm test and confirm all new parity tests pass. Run npm run typecheck to verify no TypeScript errors. Run npm run lint to verify no linting issues."
+          },
+          {
+            "id": 6,
+            "title": "Create ADR Documenting the Bash-to-TypeScript Migration Decision",
+            "description": "Write an Architecture Decision Record (ADR) in the docs directory documenting the rationale, trade-offs, and transition path for migrating from setup-ai.sh to the TypeScript CLI.",
+            "dependencies": [
+              4,
+              5
+            ],
+            "details": "Create docs/adr/001-bash-to-typescript-migration.md using the project's ADR template (templates/docs/adr_template.md). The ADR should cover: (1) Context — why setup-ai.sh existed (single-file Codespaces bootstrap, zero dependencies) and its limitations (hard to test, no type safety, template string management); (2) Decision — build TypeScript CLI as the primary implementation with bash as reference; (3) Consequences — positive (testable, type-safe, generator pattern, pure functions) and negative (requires Node.js build step, install.sh needed); (4) Alternatives Considered — keep bash-only, use Python, use Go; (5) Migration Path — keep setup-ai.sh as reference with deprecation notice, update devcontainer.json to use ai-init, provide install.sh for global installation; (6) Compatibility Notes — document the .setup-ai-mcps file format, <!-- SETUP-AI-MANAGED --> header, and other contracts that both implementations share; (7) Function mapping table (copy from task details). File should follow the doc_format.md standard (TLDR, TOC, sections < 30 lines, tables over prose).",
+            "status": "pending",
+            "testStrategy": "Verify the ADR file exists at docs/adr/001-bash-to-typescript-migration.md. Confirm it contains the required sections (Context, Decision, Consequences, Migration Path). Run npm test to ensure no regressions from file creation."
+          }
+        ],
+        "updatedAt": "2026-02-18T08:10:35.618Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-18T08:04:34.082Z",
+      "lastModified": "2026-02-18T08:10:35.619Z",
       "taskCount": 23,
-      "completedCount": 21,
+      "completedCount": 22,
       "tags": [
         "master"
       ],
-      "created": "2026-02-18T08:04:41.781Z",
+      "created": "2026-02-18T08:10:43.498Z",
       "description": "Tasks for master context"
     }
   }

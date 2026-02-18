@@ -8,10 +8,10 @@
     }
   },
 
-  "onCreateCommand": "bash setup-ai.sh on-create",
-  "postCreateCommand": "bash setup-ai.sh post-create",
-  "postStartCommand": "bash setup-ai.sh post-start",
-  "postAttachCommand": "echo '[setup-ai] VS Code attached — MCP servers should be available in Copilot Chat'",
+  "onCreateCommand": "ai-init on-create",
+  "postCreateCommand": "ai-init post-create",
+  "postStartCommand": "ai-init post-start",
+  "postAttachCommand": "echo '[ai-init] VS Code attached — MCP servers should be available in Copilot Chat'",
 
   "secrets": {
     "ANTHROPIC_API_KEY": {
