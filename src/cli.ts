@@ -222,8 +222,11 @@ async function main(): Promise<void> {
       } else {
         // Step 0: Ensure Claude Code is installed for audit capability
         if (!(await checkClaudeCodeAvailable())) {
-          await installClaudeCode().catch(() => {
-            console.warn("[ai-init] Could not install Claude Code — audit will be skipped.");
+          await installClaudeCode().catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.warn(
+              `[ai-init] Could not install Claude Code (${msg}) — audit will be skipped.`
+            );
           });
         }
 

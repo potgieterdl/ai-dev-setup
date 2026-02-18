@@ -172,9 +172,17 @@ async function buildSettingsJson(projectRoot: string): Promise<string> {
     hook: ".claude/hooks/pre-commit.sh",
   };
 
-  // Merge hooks into existing settings
-  const hooks = (existing.hooks ?? {}) as Record<string, unknown[]>;
-  const preToolUse = (hooks.PreToolUse ?? []) as Array<{ matcher: string; hook: string }>;
+  // Merge hooks into existing settings — validate structure defensively
+  const rawHooks = existing.hooks;
+  const hooks: Record<string, unknown[]> =
+    typeof rawHooks === "object" && rawHooks !== null && !Array.isArray(rawHooks)
+      ? (rawHooks as Record<string, unknown[]>)
+      : {};
+  const rawPreToolUse = Array.isArray(hooks.PreToolUse) ? hooks.PreToolUse : [];
+  const preToolUse = rawPreToolUse.filter(
+    (h): h is { matcher: string; hook: string } =>
+      typeof h === "object" && h !== null && "matcher" in h && "hook" in h
+  );
 
   // Avoid duplicating the hook if it already exists
   const alreadyExists = preToolUse.some(

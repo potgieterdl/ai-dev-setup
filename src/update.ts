@@ -322,6 +322,13 @@ export async function runUpdate(
   if (hasUpdateFlags(flags as UpdateFlags)) {
     // Non-interactive: apply CLI flags
     changed = applyFlags(saved, flags as UpdateFlags);
+  } else if (process.env.SETUP_AI_NONINTERACTIVE === "1" || !process.stdin.isTTY) {
+    // Non-interactive mode without flags — nothing to do
+    console.log(
+      "[ai-init update] No flags provided in non-interactive mode. " +
+        "Use --add-mcp, --tracker, --add-rule, etc. to specify changes."
+    );
+    return;
   } else {
     // Interactive: show dashboard
     changed = await runInteractiveUpdate(saved);

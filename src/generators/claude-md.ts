@@ -10,11 +10,12 @@ function buildTaskTrackerInstructions(config: ProjectConfig): string {
     case "taskmaster":
       return `## Task Tracker: Task Master AI
 
-**Import Task Master's workflow commands:**
-@./.taskmaster/CLAUDE.md
+> After running \`task-master init\`, the following import provides workflow commands:
+> @./.taskmaster/CLAUDE.md
 
 ### Quick Reference
 
+- \`task-master init\` — Initialize Task Master in this project
 - \`task-master next\` — Get next available task
 - \`task-master show <id>\` — View task details
 - \`task-master set-status --id=<id> --status=done\` — Mark complete

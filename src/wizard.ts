@@ -630,7 +630,11 @@ export async function runWizard(projectRoot: string): Promise<ProjectConfig> {
         })) as string;
 
         if (presetChoice !== "__manual__") {
-          const preset = allPresets.find((p) => p.name === presetChoice)!;
+          const preset = allPresets.find((p) => p.name === presetChoice);
+          if (!preset) {
+            console.error(`[ai-init] Preset "${presetChoice}" not found.`);
+            process.exit(1);
+          }
           return applyPreset(preset, config);
         }
       }

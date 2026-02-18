@@ -203,8 +203,13 @@ export async function checkTaskTracker(root: string): Promise<HealthCheck> {
     results.push({ status: "pass", message: ".taskmaster/tasks/tasks.json exists" });
 
     if (content && isValidJson(content)) {
-      const data = JSON.parse(content) as { tasks?: unknown[] };
-      const count = data.tasks?.length ?? 0;
+      const data = JSON.parse(content) as {
+        tasks?: unknown[];
+        master?: { tasks?: unknown[] };
+      };
+      // Handle both flat format ({ tasks: [] }) and tagged format ({ master: { tasks: [] } })
+      const tasks = data.tasks ?? data.master?.tasks ?? [];
+      const count = tasks.length;
       results.push({ status: "pass", message: `${count} tasks found` });
     } else {
       results.push({ status: "error", message: ".taskmaster/tasks/tasks.json is not valid JSON" });
