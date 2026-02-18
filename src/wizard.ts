@@ -186,6 +186,110 @@ async function stepDatabase(config: ProjectConfig): Promise<void> {
 }
 
 /**
+ * Step 6b: Rules Picker (F13)
+ * Multi-select to choose which rules to generate.
+ * In non-interactive mode, reads SETUP_AI_RULES env var (comma-separated).
+ */
+async function stepRulesPicker(config: ProjectConfig): Promise<void> {
+  if (isNonInteractive()) {
+    const envVal = process.env.SETUP_AI_RULES;
+    if (envVal) {
+      config.selectedRules = envVal
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    return;
+  }
+
+  if (!config.generateRules) return;
+
+  const choices = [
+    { name: "general   — Language & coding style", value: "general", checked: true },
+    { name: "docs      — Documentation standards", value: "docs", checked: true },
+    { name: "testing   — Test-first & quality gate", value: "testing", checked: true },
+    { name: "git       — Commit & branch conventions", value: "git", checked: true },
+    { name: "security  — OWASP & secrets hygiene", value: "security", checked: true },
+    { name: "config    — Config file conventions", value: "config", checked: true },
+    { name: "api       — API documentation rules", value: "api", checked: config.hasApiDocs },
+    {
+      name: "database  — Database schema & query rules",
+      value: "database",
+      checked: config.hasDatabase,
+    },
+  ];
+
+  config.selectedRules = await checkbox({
+    message: "Step 6b: Which rules do you want to generate? (space to toggle)",
+    choices,
+  });
+}
+
+/**
+ * Step 6c: Hooks Picker (F13)
+ * Multi-select to choose which pre-commit quality gate steps to include.
+ * In non-interactive mode, reads SETUP_AI_HOOKS env var (comma-separated).
+ */
+async function stepHooksPicker(config: ProjectConfig): Promise<void> {
+  if (isNonInteractive()) {
+    const envVal = process.env.SETUP_AI_HOOKS;
+    if (envVal) {
+      config.selectedHookSteps = envVal
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    return;
+  }
+
+  if (!config.generateHooks) return;
+
+  const choices = [
+    { name: "format    — Run formatter (prettier / black)", value: "format", checked: true },
+    { name: "lint      — Run linter (eslint / ruff)", value: "lint", checked: true },
+    { name: "typecheck — Run type checker (tsc / mypy)", value: "typecheck", checked: true },
+    { name: "build     — Run build command", value: "build", checked: true },
+    { name: "test      — Run test suite", value: "test", checked: true },
+  ];
+
+  config.selectedHookSteps = await checkbox({
+    message: "Step 6c: Which pre-commit quality gate steps should run?",
+    choices,
+  });
+}
+
+/**
+ * Step 6d: Skills Picker (F13)
+ * Multi-select to choose which skills to generate.
+ * In non-interactive mode, reads SETUP_AI_SKILLS env var (comma-separated).
+ */
+async function stepSkillsPicker(config: ProjectConfig): Promise<void> {
+  if (isNonInteractive()) {
+    const envVal = process.env.SETUP_AI_SKILLS;
+    if (envVal) {
+      config.selectedSkills = envVal
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    return;
+  }
+
+  if (!config.generateSkills) return;
+
+  const choices = [
+    { name: "testing       — Testing workflow skill", value: "testing", checked: true },
+    { name: "commit        — Commit message conventions skill", value: "commit", checked: true },
+    { name: "task-workflow  — Task tracker workflow skill", value: "task-workflow", checked: true },
+  ];
+
+  config.selectedSkills = await checkbox({
+    message: "Step 6d: Which skills do you want to generate?",
+    choices,
+  });
+}
+
+/**
  * Step 7: Doc & Agent Instruction Generation confirmation
  * Confirms which generation categories to run.
  */
@@ -331,6 +435,15 @@ export async function runWizard(projectRoot: string): Promise<ProjectConfig> {
 
   // Step 6: Database
   await stepDatabase(config);
+
+  // Step 6b: Rules Picker (F13)
+  await stepRulesPicker(config);
+
+  // Step 6c: Hooks Picker (F13)
+  await stepHooksPicker(config);
+
+  // Step 6d: Skills Picker (F13)
+  await stepSkillsPicker(config);
 
   // Step 7: Generation confirmation
   await stepGeneration(config);

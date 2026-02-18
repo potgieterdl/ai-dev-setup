@@ -44,10 +44,13 @@ export async function generateRules(config: ProjectConfig): Promise<FileDescript
     LANGUAGE: "TypeScript",
   };
 
+  const selected = new Set(config.selectedRules);
   const files: FileDescriptor[] = [];
 
-  // Always-generated rules
+  // Always-generated rules (filtered by selectedRules)
   for (const name of ALWAYS_RULES) {
+    const slug = name.replace(".md", "");
+    if (!selected.has(slug)) continue;
     const content = await readRule(name);
     files.push({
       path: `.claude/rules/${name}`,
@@ -55,8 +58,8 @@ export async function generateRules(config: ProjectConfig): Promise<FileDescript
     });
   }
 
-  // Conditional — API rules only if API docs selected
-  if (config.hasApiDocs) {
+  // Conditional — API rules only if API docs selected AND in selectedRules
+  if (config.hasApiDocs && selected.has("api")) {
     let content = await readRule("api.md");
     if (config.generateDocs) {
       content += "\n\n@docs/api.md";
@@ -67,8 +70,8 @@ export async function generateRules(config: ProjectConfig): Promise<FileDescript
     });
   }
 
-  // Conditional — database rules only if project has DB
-  if (config.hasDatabase) {
+  // Conditional — database rules only if project has DB AND in selectedRules
+  if (config.hasDatabase && selected.has("database")) {
     const content = await readRule("database.md");
     files.push({
       path: ".claude/rules/database.md",
@@ -76,7 +79,7 @@ export async function generateRules(config: ProjectConfig): Promise<FileDescript
     });
   }
 
-  // Conditional — agent teams rule only if opted in
+  // Conditional — agent teams rule only if opted in (not part of selectedRules picker)
   if (config.agentTeamsEnabled) {
     const content = await readRule("agent-teams.md");
     files.push({

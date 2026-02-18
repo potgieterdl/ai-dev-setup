@@ -95,4 +95,37 @@ describe("generateSkills", () => {
       }
     });
   });
+
+  describe("selectedSkills filtering (F13)", () => {
+    it("demo: only generates selected skills", async () => {
+      const result = await generateSkills(makeConfig({ selectedSkills: ["commit"] }));
+      const paths = result.map((f) => f.path);
+      expect(paths).toContain(".claude/skills/commit.md");
+      expect(paths).not.toContain(".claude/skills/testing.md");
+      expect(paths).not.toContain(".claude/skills/task-workflow.md");
+    });
+
+    it("demo: returns exactly 1 file when only one skill is selected", async () => {
+      const result = await generateSkills(makeConfig({ selectedSkills: ["testing"] }));
+      expect(result).toHaveLength(1);
+      expect(result[0].path).toBe(".claude/skills/testing.md");
+    });
+
+    it("demo: returns 2 files when two skills are selected", async () => {
+      const result = await generateSkills(
+        makeConfig({ selectedSkills: ["commit", "task-workflow"] })
+      );
+      expect(result).toHaveLength(2);
+      const paths = result.map((f) => f.path);
+      expect(paths).toContain(".claude/skills/commit.md");
+      expect(paths).toContain(".claude/skills/task-workflow.md");
+    });
+
+    it("demo: returns all 3 files when all skills are selected", async () => {
+      const result = await generateSkills(
+        makeConfig({ selectedSkills: ["testing", "commit", "task-workflow"] })
+      );
+      expect(result).toHaveLength(3);
+    });
+  });
 });

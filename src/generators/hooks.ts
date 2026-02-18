@@ -1,27 +1,79 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import type { ProjectConfig, FileDescriptor } from "../types.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/hooks");
+/** Maps hook step names to their bash script snippets */
+const STEP_SNIPPETS: Record<string, { label: string; script: string }> = {
+  format: {
+    label: "Format",
+    script: "npm run format --if-present 2>/dev/null || true",
+  },
+  lint: {
+    label: "Lint (fail on errors)",
+    script:
+      'npm run lint --if-present || { echo "BLOCK: Lint errors found. Fix before committing."; exit 1; }',
+  },
+  typecheck: {
+    label: "Type-check",
+    script:
+      'npm run typecheck --if-present || { echo "BLOCK: Type errors found. Fix before committing."; exit 1; }',
+  },
+  build: {
+    label: "Build",
+    script:
+      'npm run build --if-present || { echo "BLOCK: Build failed. Fix before committing."; exit 1; }',
+  },
+  test: {
+    label: "Test",
+    script:
+      'npm test --if-present || { echo "BLOCK: Tests failing. Fix before committing."; exit 1; }',
+  },
+};
+
+/**
+ * Build the pre-commit.sh script dynamically from selected hook steps.
+ */
+function buildPreCommitScript(selectedSteps: string[]): string {
+  const lines = [
+    "#!/usr/bin/env bash",
+    "set -euo pipefail",
+    "",
+    'echo "Running quality gate before commit..."',
+    "",
+  ];
+
+  selectedSteps.forEach((step, idx) => {
+    const snippet = STEP_SNIPPETS[step];
+    if (!snippet) return;
+    lines.push(`# ${idx + 1}. ${snippet.label}`);
+    lines.push(snippet.script);
+    lines.push("");
+  });
+
+  lines.push('echo "Quality gate passed."');
+  lines.push("");
+  return lines.join("\n");
+}
 
 /**
  * Generate .claude/hooks/ files and the corresponding settings.json hook config.
  *
  * Produces:
  * 1. .claude/hooks/pre-commit.sh — the quality gate script (marked executable)
+ *    Built dynamically from config.selectedHookSteps (F13).
  * 2. .claude/settings.json — hook matcher config that triggers pre-commit.sh
  *    on `Bash(git commit)` events
  *
  * If a .claude/settings.json already exists in the target project, the hooks
  * entry is merged into it. Otherwise a new settings file is created.
  *
- * Implements F3 (Hooks generation) from the PRD.
+ * Implements F3 (Hooks generation) and F13 (Granular opt-in) from the PRD.
  */
 export async function generateHooks(config: ProjectConfig): Promise<FileDescriptor[]> {
-  // Read the pre-commit hook template
-  const preCommitContent = await fs.readFile(path.join(TEMPLATES_DIR, "pre-commit.sh"), "utf8");
+  const selectedSteps = config.selectedHookSteps ?? Object.keys(STEP_SNIPPETS);
+
+  // Build pre-commit script dynamically from selected steps
+  const preCommitContent = buildPreCommitScript(selectedSteps);
 
   // Build settings.json with hook matcher
   const settingsContent = await buildSettingsJson(config.projectRoot);

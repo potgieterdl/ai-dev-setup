@@ -57,6 +57,11 @@ export interface ProjectConfig {
   agentTeamsEnabled: boolean;
   runAudit: boolean;
 
+  // Granular opt-in selections (F13)
+  selectedRules: string[];
+  selectedHookSteps: string[];
+  selectedSkills: string[];
+
   // Derived from selections
   hasApiDocs: boolean;
   hasDatabase: boolean;

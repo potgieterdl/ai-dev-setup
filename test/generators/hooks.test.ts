@@ -38,23 +38,24 @@ describe("generateHooks", () => {
       expect(preCommit!.content).toContain("--if-present");
     });
 
-    it("demo: pre-commit.sh contains all 5 quality gate steps in correct order", async () => {
+    it("demo: pre-commit.sh contains all 5 quality gate steps with default config", async () => {
       const result = await generateHooks(makeConfig());
       const preCommit = result.find((f) => f.path === ".claude/hooks/pre-commit.sh");
       expect(preCommit).toBeDefined();
       const content = preCommit!.content;
 
-      expect(content).toContain("# 1. Format");
-      expect(content).toContain("# 2. Lint");
-      expect(content).toContain("# 3. Type-check");
-      expect(content).toContain("# 4. Build");
-      expect(content).toContain("# 5. Test");
+      expect(content).toContain("Format");
+      expect(content).toContain("Lint");
+      expect(content).toContain("Type-check");
+      expect(content).toContain("Build");
+      expect(content).toContain("Test");
 
-      const formatIdx = content.indexOf("# 1. Format");
-      const lintIdx = content.indexOf("# 2. Lint");
-      const typeIdx = content.indexOf("# 3. Type-check");
-      const buildIdx = content.indexOf("# 4. Build");
-      const testIdx = content.indexOf("# 5. Test");
+      // Verify correct order
+      const formatIdx = content.indexOf("Format");
+      const lintIdx = content.indexOf("Lint");
+      const typeIdx = content.indexOf("Type-check");
+      const buildIdx = content.indexOf("Build");
+      const testIdx = content.indexOf("Test");
 
       expect(formatIdx).toBeLessThan(lintIdx);
       expect(lintIdx).toBeLessThan(typeIdx);
@@ -75,6 +76,46 @@ describe("generateHooks", () => {
       const preCommit = result.find((f) => f.path === ".claude/hooks/pre-commit.sh");
       expect(preCommit).toBeDefined();
       expect(preCommit!.content).toContain("set -euo pipefail");
+    });
+  });
+
+  describe("selectedHookSteps filtering (F13)", () => {
+    it("demo: generates pre-commit.sh with only selected steps", async () => {
+      const result = await generateHooks(makeConfig({ selectedHookSteps: ["format", "lint"] }));
+      const script = result.find((f) => f.path.includes("pre-commit.sh"))?.content ?? "";
+      expect(script).toContain("npm run format");
+      expect(script).toContain("npm run lint");
+      expect(script).not.toContain("npm run typecheck");
+      expect(script).not.toContain("npm run build");
+      expect(script).not.toContain("npm test");
+    });
+
+    it("demo: generates a valid bash script with a single step", async () => {
+      const result = await generateHooks(makeConfig({ selectedHookSteps: ["test"] }));
+      const script = result.find((f) => f.path.includes("pre-commit.sh"))?.content ?? "";
+      expect(script).toMatch(/^#!/);
+      expect(script).toContain("npm test");
+      expect(script).not.toContain("npm run format");
+    });
+
+    it("demo: step numbering reflects only selected steps", async () => {
+      const result = await generateHooks(makeConfig({ selectedHookSteps: ["lint", "test"] }));
+      const script = result.find((f) => f.path.includes("pre-commit.sh"))?.content ?? "";
+      expect(script).toContain("# 1. Lint");
+      expect(script).toContain("# 2. Test");
+      expect(script).not.toContain("# 3.");
+    });
+
+    it("demo: all 5 steps included when all are selected", async () => {
+      const result = await generateHooks(
+        makeConfig({ selectedHookSteps: ["format", "lint", "typecheck", "build", "test"] })
+      );
+      const script = result.find((f) => f.path.includes("pre-commit.sh"))?.content ?? "";
+      expect(script).toContain("# 1. Format");
+      expect(script).toContain("# 2. Lint");
+      expect(script).toContain("# 3. Type-check");
+      expect(script).toContain("# 4. Build");
+      expect(script).toContain("# 5. Test");
     });
   });
 

@@ -34,9 +34,12 @@ export async function generateSkills(config: ProjectConfig): Promise<FileDescrip
     TASK_TRACKER: config.taskTracker,
   };
 
+  const selected = new Set(config.selectedSkills);
   const files: FileDescriptor[] = [];
 
   for (const name of SKILLS) {
+    const slug = name.replace(".md", "");
+    if (!selected.has(slug)) continue;
     const content = await readSkill(name);
     files.push({
       path: `.claude/skills/${name}`,

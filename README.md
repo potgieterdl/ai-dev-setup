@@ -95,6 +95,9 @@ All variables are optional. They drive non-interactive mode when `SETUP_AI_NONIN
 | `SETUP_AI_SKIP_AUDIT`     | `1` to skip AI audit step                                                   | `0`               |
 | `SETUP_AI_AGENT_TEAMS`    | `1` to enable agent teams                                                   | `0`               |
 | `SETUP_AI_PRD_PATH`       | Path to existing PRD file                                                   | —                 |
+| `SETUP_AI_RULES`          | Comma-separated: `general,docs,testing,git,security,config,api,database`    | All               |
+| `SETUP_AI_HOOKS`          | Comma-separated: `format,lint,typecheck,build,test`                         | All               |
+| `SETUP_AI_SKILLS`         | Comma-separated: `testing,commit,task-workflow`                             | All               |
 | `AI_HELPER_HOME`          | Override install directory                                                  | `~/.ai-dev-setup` |
 
 ## Development

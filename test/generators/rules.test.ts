@@ -94,6 +94,67 @@ describe("generateRules", () => {
     });
   });
 
+  describe("selectedRules filtering (F13)", () => {
+    it("demo: only generates selected rules", async () => {
+      const result = await generateRules(makeConfig({ selectedRules: ["general", "testing"] }));
+      const paths = result.map((f) => f.path);
+      expect(paths).toContain(".claude/rules/general.md");
+      expect(paths).toContain(".claude/rules/testing.md");
+      expect(paths).not.toContain(".claude/rules/docs.md");
+      expect(paths).not.toContain(".claude/rules/git.md");
+      expect(paths).not.toContain(".claude/rules/security.md");
+      expect(paths).not.toContain(".claude/rules/config.md");
+    });
+
+    it("demo: respects hasApiDocs AND selectedRules for api rule", async () => {
+      const result = await generateRules(
+        makeConfig({ hasApiDocs: true, selectedRules: ["general"] })
+      );
+      const paths = result.map((f) => f.path);
+      expect(paths).not.toContain(".claude/rules/api.md");
+    });
+
+    it("demo: generates api rule when both hasApiDocs and selectedRules include api", async () => {
+      const result = await generateRules(
+        makeConfig({ hasApiDocs: true, selectedRules: ["general", "api"] })
+      );
+      const paths = result.map((f) => f.path);
+      expect(paths).toContain(".claude/rules/api.md");
+    });
+
+    it("demo: respects hasDatabase AND selectedRules for database rule", async () => {
+      const result = await generateRules(
+        makeConfig({ hasDatabase: true, selectedRules: ["general"] })
+      );
+      const paths = result.map((f) => f.path);
+      expect(paths).not.toContain(".claude/rules/database.md");
+    });
+
+    it("demo: generates database rule when both hasDatabase and selectedRules include database", async () => {
+      const result = await generateRules(
+        makeConfig({ hasDatabase: true, selectedRules: ["general", "database"] })
+      );
+      const paths = result.map((f) => f.path);
+      expect(paths).toContain(".claude/rules/database.md");
+    });
+
+    it("demo: returns exactly 1 file when only one rule is selected", async () => {
+      const result = await generateRules(makeConfig({ selectedRules: ["git"] }));
+      expect(result).toHaveLength(1);
+      expect(result[0].path).toBe(".claude/rules/git.md");
+    });
+
+    it("demo: agent-teams rule is not affected by selectedRules", async () => {
+      const result = await generateRules(
+        makeConfig({ agentTeamsEnabled: true, selectedRules: ["general"] })
+      );
+      const paths = result.map((f) => f.path);
+      expect(paths).toContain(".claude/rules/agent-teams.md");
+      expect(paths).toContain(".claude/rules/general.md");
+      expect(result).toHaveLength(2);
+    });
+  });
+
   describe("template placeholder substitution", () => {
     it("demo: replaces {{LANGUAGE}} placeholder in general.md", async () => {
       const result = await generateRules(makeConfig({ projectName: "my-cool-app" }));
