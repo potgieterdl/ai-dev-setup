@@ -29,5 +29,8 @@ dist/
 # AI init audit artifact (F11)
 .ai-init-audit.md
 
+# Agent automation logs
+agent_logs/
+
 # OS specific
 .DS_Store

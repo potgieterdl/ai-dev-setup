@@ -2,6 +2,11 @@
 
 > **TLDR:** Simple markdown task tracker for {{PROJECT_NAME}}. Each task has a status, dependencies, success criteria, and a demo command.
 
+## Table of Contents
+
+- [Summary](#summary)
+- [Tasks](#tasks)
+
 ---
 
 ## Summary
