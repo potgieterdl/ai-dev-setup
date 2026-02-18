@@ -393,12 +393,10 @@ describe("bash-to-typescript parity", () => {
       expect(await fileExists(tempDir, ".claude/commands/review.md")).toBe(true);
     });
 
-    it("enhancement: boot-prompt.txt generation", async () => {
+    it("enhancement: boot-prompt.txt is NOT generated (removed in F12)", async () => {
       await runCli([], tempDir);
 
-      expect(await fileExists(tempDir, ".claude/boot-prompt.txt")).toBe(true);
-      const content = await readFile(tempDir, ".claude/boot-prompt.txt");
-      expect(content).toContain("task");
+      expect(await fileExists(tempDir, ".claude/boot-prompt.txt")).toBe(false);
     });
   });
 });

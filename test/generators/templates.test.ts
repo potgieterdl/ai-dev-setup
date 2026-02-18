@@ -8,7 +8,6 @@ const RULES_DIR = path.resolve(__dirname, "../../templates/rules");
 const SKILLS_DIR = path.resolve(__dirname, "../../templates/skills");
 const HOOKS_DIR = path.resolve(__dirname, "../../templates/hooks");
 const COMMANDS_DIR = path.resolve(__dirname, "../../templates/commands");
-const TEMPLATES_ROOT = path.resolve(__dirname, "../../templates");
 
 const EXPECTED_TEMPLATES = [
   "doc_format.md",
@@ -376,34 +375,5 @@ describe("commands templates", () => {
   });
 });
 
-/* ──────────────────────────────────────────────────────────
- * Boot prompt template test (F8)
- * ────────────────────────────────────────────────────────── */
-
-describe("boot-prompt template", () => {
-  it("templates/boot-prompt.txt exists", async () => {
-    await expect(fs.access(path.join(TEMPLATES_ROOT, "boot-prompt.txt"))).resolves.toBeUndefined();
-  });
-
-  it("contains {{TASK_TRACKER}} placeholder", async () => {
-    const content = await fs.readFile(path.join(TEMPLATES_ROOT, "boot-prompt.txt"), "utf8");
-    expect(content).toContain("{{TASK_TRACKER}}");
-  });
-
-  it("contains {{PROJECT_NAME}} placeholder", async () => {
-    const content = await fs.readFile(path.join(TEMPLATES_ROOT, "boot-prompt.txt"), "utf8");
-    expect(content).toContain("{{PROJECT_NAME}}");
-  });
-
-  it("placeholder substitution works correctly", async () => {
-    const template = await fs.readFile(path.join(TEMPLATES_ROOT, "boot-prompt.txt"), "utf8");
-    const result = fillTemplate(template, {
-      PROJECT_NAME: "MyProject",
-      TASK_TRACKER: "taskmaster",
-    });
-    expect(result).toContain("MyProject");
-    expect(result).toContain("taskmaster");
-    expect(result).not.toContain("{{PROJECT_NAME}}");
-    expect(result).not.toContain("{{TASK_TRACKER}}");
-  });
-});
+/* boot-prompt template tests removed — F12: boot-prompt.txt was deleted.
+ * CLAUDE.md now provides all session context. See docs/adr/026-remove-boot-prompt.md */

@@ -8,11 +8,11 @@
 
 ## Issues Found and Fixed
 
-| # | Severity | File | Issue | Fix |
-|---|----------|------|-------|-----|
-| 1 | HIGH | `templates/docs/adr_template.md` | Missing TLDR section required by doc_format.md standard | Added `> **TLDR:**` placeholder after heading |
-| 2 | HIGH | `templates/docs/adr_template.md` | Missing Table of Contents required by doc_format.md standard | Added TOC with anchor links to all sections |
-| 3 | MEDIUM | `templates/docs/tasks_simple.md` | Missing Table of Contents section | Added TOC linking to Summary and Tasks sections |
+| #   | Severity | File                             | Issue                                                        | Fix                                             |
+| --- | -------- | -------------------------------- | ------------------------------------------------------------ | ----------------------------------------------- |
+| 1   | HIGH     | `templates/docs/adr_template.md` | Missing TLDR section required by doc_format.md standard      | Added `> **TLDR:**` placeholder after heading   |
+| 2   | HIGH     | `templates/docs/adr_template.md` | Missing Table of Contents required by doc_format.md standard | Added TOC with anchor links to all sections     |
+| 3   | MEDIUM   | `templates/docs/tasks_simple.md` | Missing Table of Contents section                            | Added TOC linking to Summary and Tasks sections |
 
 ## Verification Results
 

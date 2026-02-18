@@ -1,6 +1,6 @@
 # ADR-012: Commands Generator with Tracker-Specific Substitution
 
-- **Status:** Accepted
+- **Status:** Accepted (partially superseded by ADR-026 — boot-prompt removed)
 - **Feature:** F8 (Custom Claude Commands)
 - **Task:** 12 — Implement Commands Generator
 - **Date:** 2026-02-17
@@ -24,7 +24,7 @@ Key requirements:
   - `taskmaster` → `task-master next` / `task-master set-status --id=<id> --status=done`
   - `beads` → `bd show` / `bd update <id> --status done && bd sync`
   - `markdown` → human-readable instructions for editing `TASKS.md`
-- **Always returns 3 files** — `.claude/commands/dev-next.md`, `.claude/commands/review.md`, and `.claude/boot-prompt.txt`. No conditional generation — all three are always useful regardless of project configuration.
+- **Always returns 2 files** — `.claude/commands/dev-next.md` and `.claude/commands/review.md`. Boot-prompt.txt was removed in F12 (see ADR-026) — CLAUDE.md provides session context.
 - **review.md has no tracker placeholders** — The review command is tracker-agnostic (it reviews git diff and runs the quality gate). This keeps it simple and avoids unnecessary coupling to the task tracker.
 
 ## Consequences

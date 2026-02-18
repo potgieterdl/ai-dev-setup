@@ -72,7 +72,6 @@ ai-init post-start         # Codespace lifecycle: per-session setup
 | `.claude/skills/`                 | Keyword-activated agent knowledge               |
 | `.claude/hooks/pre-commit.sh`     | Pre-commit quality gate                         |
 | `.claude/commands/`               | `/dev-next` and `/review` slash commands        |
-| `.claude/boot-prompt.txt`         | Session startup instructions                    |
 | `.devcontainer/devcontainer.json` | Codespace lifecycle hooks                       |
 
 ## Task Tracker Options
@@ -87,15 +86,15 @@ ai-init post-start         # Codespace lifecycle: per-session setup
 
 All variables are optional. They drive non-interactive mode when `SETUP_AI_NONINTERACTIVE=1`.
 
-| Variable                  | Values                                                                      | Default              |
-| ------------------------- | --------------------------------------------------------------------------- | -------------------- |
-| `SETUP_AI_NONINTERACTIVE` | `1` to skip all prompts                                                     | `0`                  |
-| `SETUP_AI_MCPS`           | Comma-separated: `taskmaster,context7,browsermcp,sequential-thinking,beads` | `taskmaster`         |
-| `SETUP_AI_TRACKER`        | `taskmaster` \| `beads` \| `markdown`                                       | `taskmaster`         |
-| `SETUP_AI_ARCH`           | `monolith` \| `2-tier` \| `3-tier` \| `microservices` \| `skip`             | `skip`               |
-| `SETUP_AI_SKIP_AUDIT`     | `1` to skip AI audit step                                                   | `0`                  |
-| `SETUP_AI_AGENT_TEAMS`    | `1` to enable agent teams                                                   | `0`                  |
-| `SETUP_AI_PRD_PATH`       | Path to existing PRD file                                                   | —                    |
+| Variable                  | Values                                                                      | Default           |
+| ------------------------- | --------------------------------------------------------------------------- | ----------------- |
+| `SETUP_AI_NONINTERACTIVE` | `1` to skip all prompts                                                     | `0`               |
+| `SETUP_AI_MCPS`           | Comma-separated: `taskmaster,context7,browsermcp,sequential-thinking,beads` | `taskmaster`      |
+| `SETUP_AI_TRACKER`        | `taskmaster` \| `beads` \| `markdown`                                       | `taskmaster`      |
+| `SETUP_AI_ARCH`           | `monolith` \| `2-tier` \| `3-tier` \| `microservices` \| `skip`             | `skip`            |
+| `SETUP_AI_SKIP_AUDIT`     | `1` to skip AI audit step                                                   | `0`               |
+| `SETUP_AI_AGENT_TEAMS`    | `1` to enable agent teams                                                   | `0`               |
+| `SETUP_AI_PRD_PATH`       | Path to existing PRD file                                                   | —                 |
 | `AI_HELPER_HOME`          | Override install directory                                                  | `~/.ai-dev-setup` |
 
 ## Development

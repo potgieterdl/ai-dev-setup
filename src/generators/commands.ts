@@ -6,7 +6,6 @@ import { fillTemplate } from "../utils.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMMANDS_DIR = path.resolve(__dirname, "../../templates/commands");
-const TEMPLATES_DIR = path.resolve(__dirname, "../../templates");
 
 /**
  * Read a command template file from the templates/commands/ directory.
@@ -51,13 +50,14 @@ function getTrackerDoneCommand(tracker: string): string {
 }
 
 /**
- * Generate .claude/commands/ files and boot-prompt.txt from templates.
+ * Generate .claude/commands/ files from templates.
  *
- * Reads command templates from templates/commands/ and the boot-prompt from
- * templates/boot-prompt.txt, applies placeholder substitution with
- * tracker-specific commands, and returns FileDescriptor[] for all output files.
+ * Reads command templates from templates/commands/, applies placeholder
+ * substitution with tracker-specific commands, and returns FileDescriptor[]
+ * for all output files.
  *
  * Implements F8 (Custom Claude Commands) from the PRD.
+ * Boot-prompt.txt was removed in F12 — CLAUDE.md provides session context.
  */
 export async function generateCommands(config: ProjectConfig): Promise<FileDescriptor[]> {
   const vars: Record<string, string> = {
@@ -76,13 +76,6 @@ export async function generateCommands(config: ProjectConfig): Promise<FileDescr
       content: fillTemplate(content, vars),
     });
   }
-
-  // Boot prompt — session startup instructions
-  const bootPrompt = await fs.readFile(path.join(TEMPLATES_DIR, "boot-prompt.txt"), "utf8");
-  files.push({
-    path: ".claude/boot-prompt.txt",
-    content: fillTemplate(bootPrompt, vars),
-  });
 
   return files;
 }

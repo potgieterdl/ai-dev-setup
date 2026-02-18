@@ -9,18 +9,23 @@ function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
 
 describe("generateCommands", () => {
   describe("file output", () => {
-    it("smoke: generates all 3 files", async () => {
+    it("smoke: generates all 2 command files", async () => {
       const result = await generateCommands(makeConfig());
       const paths = result.map((f) => f.path);
 
       expect(paths).toContain(".claude/commands/dev-next.md");
       expect(paths).toContain(".claude/commands/review.md");
-      expect(paths).toContain(".claude/boot-prompt.txt");
     });
 
-    it("smoke: returns exactly 3 files", async () => {
+    it("smoke: returns exactly 2 files", async () => {
       const result = await generateCommands(makeConfig());
-      expect(result).toHaveLength(3);
+      expect(result).toHaveLength(2);
+    });
+
+    it("smoke: does not generate boot-prompt.txt (removed in F12)", async () => {
+      const result = await generateCommands(makeConfig());
+      const paths = result.map((f) => f.path);
+      expect(paths).not.toContain(".claude/boot-prompt.txt");
     });
 
     it("smoke: every generated file has content", async () => {
@@ -73,44 +78,6 @@ describe("generateCommands", () => {
       expect(review!.content).toContain("type-check");
       expect(review!.content).toContain("build");
       expect(review!.content).toContain("test");
-    });
-  });
-
-  describe("boot-prompt.txt content", () => {
-    it("demo: boot-prompt.txt has project name substituted", async () => {
-      const result = await generateCommands(makeConfig({ projectName: "my-cool-project" }));
-      const boot = result.find((f) => f.path === ".claude/boot-prompt.txt");
-      expect(boot).toBeDefined();
-      expect(boot!.content).toContain("my-cool-project");
-    });
-
-    it("demo: boot-prompt.txt has tracker-specific content for taskmaster", async () => {
-      const result = await generateCommands(makeConfig({ taskTracker: "taskmaster" }));
-      const boot = result.find((f) => f.path === ".claude/boot-prompt.txt");
-      expect(boot).toBeDefined();
-      expect(boot!.content).toContain("taskmaster");
-    });
-
-    it("demo: boot-prompt.txt has tracker-specific content for beads", async () => {
-      const result = await generateCommands(makeConfig({ taskTracker: "beads" }));
-      const boot = result.find((f) => f.path === ".claude/boot-prompt.txt");
-      expect(boot).toBeDefined();
-      expect(boot!.content).toContain("beads");
-    });
-
-    it("demo: boot-prompt.txt references /dev-next and /review commands", async () => {
-      const result = await generateCommands(makeConfig());
-      const boot = result.find((f) => f.path === ".claude/boot-prompt.txt");
-      expect(boot).toBeDefined();
-      expect(boot!.content).toContain("/dev-next");
-      expect(boot!.content).toContain("/review");
-    });
-
-    it("demo: boot-prompt.txt has no unresolved placeholders", async () => {
-      const result = await generateCommands(makeConfig());
-      const boot = result.find((f) => f.path === ".claude/boot-prompt.txt");
-      expect(boot).toBeDefined();
-      expect(boot!.content).not.toMatch(/\{\{\w+\}\}/);
     });
   });
 
