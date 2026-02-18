@@ -59,6 +59,22 @@ ensure_node() {
 # --- Step 2: Clone or update the repository ---
 
 ensure_repo() {
+  if [ -d "$AI_HELPER_HOME" ]; then
+    if [ ! -d "$AI_HELPER_HOME/.git" ]; then
+      # Directory exists but isn't a git repo (e.g. failed previous clone)
+      log "Removing incomplete installation at $AI_HELPER_HOME..."
+      rm -rf "$AI_HELPER_HOME"
+    else
+      # Verify the remote points to the correct repo
+      local current_remote
+      current_remote=$(git -C "$AI_HELPER_HOME" remote get-url origin 2>/dev/null || echo "")
+      if [ "$current_remote" != "$REPO_URL" ]; then
+        log "Existing repo has wrong remote ($current_remote). Re-cloning..."
+        rm -rf "$AI_HELPER_HOME"
+      fi
+    fi
+  fi
+
   if [ -d "$AI_HELPER_HOME/.git" ]; then
     log "Updating ai-dev-setup..."
     git -C "$AI_HELPER_HOME" pull --ff-only || {
