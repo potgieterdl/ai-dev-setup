@@ -8,6 +8,7 @@ import { generateSkills } from "../generators/skills.js";
 import { generateHooks } from "../generators/hooks.js";
 import { generateDevcontainer } from "../generators/devcontainer.js";
 import { generateCommands } from "../generators/commands.js";
+import { configureAgentTeams } from "../generators/agent-teams.js";
 import type { FileDescriptor } from "../types.js";
 
 /**
@@ -56,6 +57,9 @@ export async function runPostCreate(config: ProjectConfig, overwrite = true): Pr
   }
 
   const written = await writeFiles(allFiles, config.projectRoot, overwrite);
+
+  // Agent teams: update user-level ~/.claude/settings.json (outside project root)
+  await configureAgentTeams(config);
 
   // Track generated files for audit (F11)
   config.generatedFiles.push(...written);

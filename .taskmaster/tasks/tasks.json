@@ -1108,8 +1108,73 @@
         "dependencies": [
           "10"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create src/generators/agent-teams.ts with configureAgentTeams function",
+            "description": "Implement the agent-teams generator module that updates ~/.claude/settings.json with the CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 env flag when agentTeamsEnabled is true.",
+            "dependencies": [],
+            "details": "Create `src/generators/agent-teams.ts` following the same pattern as `src/generators/hooks.ts`. The function must: (1) early-return when `config.agentTeamsEnabled` is false, (2) read existing `~/.claude/settings.json` if it exists (gracefully handling missing file), (3) merge in `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1'` preserving all existing keys, (4) create the `~/.claude/` directory if needed with `fs.mkdir({ recursive: true })`, (5) write the merged JSON back to `~/.claude/settings.json`, (6) log `[ai-init] Agent teams mode enabled in ~/.claude/settings.json`. Import `fs from 'node:fs/promises'`, `path from 'node:path'`, `os from 'node:os'`, and `type { ProjectConfig } from '../types.js'`. Note: do NOT import `FileDescriptor` since this function has no return value (returns `Promise<void>`).",
+            "status": "done",
+            "testStrategy": "Covered by unit tests in subtask 2.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T07:42:42.915Z"
+          },
+          {
+            "id": 2,
+            "title": "Write unit tests in test/generators/agent-teams.test.ts",
+            "description": "Create a comprehensive unit test file that verifies all behaviour of configureAgentTeams, using a temp directory for the home dir simulation via environment stubbing.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create `test/generators/agent-teams.test.ts` following the style of `test/generators/hooks.test.ts`. Use `vitest` (`describe`, `it`, `expect`, `beforeEach`, `afterEach`). In each test, redirect `os.homedir()` by mocking it (or by writing to a real `os.tmpdir()` sub-path). Tests to include: (1) with `agentTeamsEnabled: false` — function returns without writing any files; (2) with `agentTeamsEnabled: true` and no existing settings file — creates `~/.claude/settings.json` containing `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1'`; (3) with an existing settings file that has other keys — merges in the env flag without removing existing keys; (4) with existing settings that already have an `env` object with other vars — merges into the existing env object; (5) written file is valid JSON. Use `makeConfig` helper with `defaultConfig` + overrides pattern consistent with other test files.",
+            "status": "done",
+            "testStrategy": "Tests themselves are the test strategy; run with `npm test -- agent-teams`.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T07:43:18.715Z"
+          },
+          {
+            "id": 3,
+            "title": "Integrate configureAgentTeams call into runPostCreate in src/phases/post-create.ts",
+            "description": "Import and call configureAgentTeams at the end of runPostCreate, after writeFiles, so the user-level settings update happens once all project files are written.",
+            "dependencies": [
+              1
+            ],
+            "details": "Edit `src/phases/post-create.ts`. Add import: `import { configureAgentTeams } from '../generators/agent-teams.js';`. After the `config.generatedFiles.push(...written)` line (and before the final `return written`), add: `await configureAgentTeams(config);`. This placement ensures: (a) all project-scoped files are already written, (b) the user-level settings update only runs when `config.agentTeamsEnabled` is true (the guard is inside `configureAgentTeams`). The function is async so the await is required. Do not change any other logic in `runPostCreate`.",
+            "status": "done",
+            "testStrategy": "Verify integration by running the full test suite (`npm test`) after the change. Specifically, existing post-create phase tests must still pass and not regress.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T07:43:47.986Z"
+          },
+          {
+            "id": 4,
+            "title": "Verify agent-teams.md rule template exists and is used by generateRules",
+            "description": "Confirm the agent-teams.md rule template file exists under templates/rules/ and that generateRules already includes it when agentTeamsEnabled is true (Task 10 dependency), documenting that no additional rule generation logic is needed in this task.",
+            "dependencies": [],
+            "details": "Run `ls templates/rules/` to confirm `agent-teams.md` exists. Then read `src/generators/rules.ts` and verify the conditional block `if (config.agentTeamsEnabled)` reads and emits `.claude/rules/agent-teams.md`. Check that `test/generators/rules.test.ts` already has a passing test for this path (it does — see lines 74-86). If the template file is missing, create a minimal `templates/rules/agent-teams.md` with the agent-teams three-tier agent coordination content described in CLAUDE.md. This subtask is verification/guard-rail — no code change expected unless the template is absent.",
+            "status": "done",
+            "testStrategy": "Run `npm test -- rules` to confirm the conditional agent-teams rule tests pass. Visually inspect the template file content to ensure it describes the orchestrator/executor/checker roles.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T07:48:29.701Z"
+          },
+          {
+            "id": 5,
+            "title": "Run full quality gate and mark task complete",
+            "description": "Execute the mandatory pre-completion checklist: format, lint, type-check, build, and full test suite. Fix any failures discovered.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Run the following commands in order per CLAUDE.md quality gate requirements: (1) `npm run format` — fix any formatting issues in new/changed files; (2) `npm run lint` — fix all lint errors (warnings acceptable); (3) `npm run typecheck` — resolve any TypeScript errors, particularly ensuring `configureAgentTeams` has correct return type annotations and no unused imports; (4) `npm run build` — verify zero compilation errors; (5) `npm test` — run the full Vitest suite and confirm all tests pass including the new `agent-teams.test.ts`. If any step fails, fix the issue and re-run from that step. After all checks pass, log findings via `update_subtask` and set task 18 status to `done`.",
+            "status": "done",
+            "testStrategy": "All five quality gate commands must exit with code 0. Test suite must show 0 failures across all test files including the new agent-teams tests.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T07:49:32.452Z"
+          }
+        ],
+        "updatedAt": "2026-02-18T07:49:32.452Z"
       },
       {
         "id": "19",
@@ -1324,8 +1389,70 @@
           "19",
           "20"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Write unit tests for mcp-json and devcontainer generators",
+            "description": "Create test/generators/mcp-json.test.ts and test/generators/devcontainer.test.ts with pure function input/output tests covering all config permutations.",
+            "dependencies": [],
+            "details": "For mcp-json: test that .mcp.json uses 'mcpServers' root key, .vscode/mcp.json uses 'servers' root key with 'cwd' field, all 5 registry servers produce correct entries, empty selectedMcps produces empty objects, VS Code env vars use '${env:VAR}' syntax. For devcontainer: test that output is exactly 1 FileDescriptor at '.devcontainer/devcontainer.json', parsed JSON has onCreateCommand 'ai-init on-create', postCreateCommand 'ai-init post-create', postStartCommand 'ai-init post-start', ANTHROPIC_API_KEY secret always present, MCP-derived secrets filtered to _KEY/_SECRET/_TOKEN suffixes, no duplicate secrets. Use makeConfig() helper for override merging. All test names use 'demo:' or 'smoke:' prefix.",
+            "status": "done",
+            "testStrategy": "Run npm test -- test/generators/mcp-json.test.ts test/generators/devcontainer.test.ts; verify all tests pass and names follow smoke:/demo: convention.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Write unit tests for claude-md and docs generators",
+            "description": "Create test/generators/claude-md.test.ts and test/generators/docs.test.ts covering conditional content generation based on taskTracker, generateDocs, hasApiDocs, and architecture flags.",
+            "dependencies": [
+              1
+            ],
+            "details": "For claude-md: test taskmaster variant includes '@./.taskmaster/CLAUDE.md' import and 'task-master next'; beads variant includes 'beads_ready' and 'bd sync'; markdown variant includes 'TASKS.md'; no MCPs → 1 file output; with MCPs → CLAUDE_MCP.md generated; quality gate section always present. For docs: test base file count is 7 (doc_format, prd, architecture, cuj, testing_strategy, onboarding, adr_template); +1 if hasApiDocs; +1 if taskTracker==='markdown' (TASKS.md); PROJECT_NAME placeholder substituted correctly; ARCHITECTURE placeholder substituted; DATE placeholder present in some files. All tests use pure function calls with no temp directories.",
+            "status": "done",
+            "testStrategy": "Run npm test on both files; verify file count assertions, content markers, and placeholder substitution all pass.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Write unit tests for rules and skills generators",
+            "description": "Create test/generators/rules.test.ts and test/generators/skills.test.ts covering conditional rule generation and always-on skills output.",
+            "dependencies": [
+              1
+            ],
+            "details": "For rules: test base count is 6 (general, docs, testing, git, security, config); +1 if hasApiDocs (api.md); api.md content includes '@docs/api.md' import when generateDocs=true; +1 if hasDatabase (database.md); +1 if agentTeamsEnabled (agent-teams.md); PROJECT_NAME and TASK_TRACKER placeholders substituted; no leftover '{{...}}' markers. For skills: test output is always exactly 3 files (testing.md, commit.md, task-workflow.md); each has YAML frontmatter with description field; content includes Integration-First section; TASK_TRACKER placeholder substituted with actual tracker value. Use makeConfig() with flag overrides. All test names use 'demo:' or 'smoke:' prefix.",
+            "status": "done",
+            "testStrategy": "Run npm test on rules.test.ts and skills.test.ts; confirm conditional file counts, YAML frontmatter validity, and no unresolved placeholders.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Write unit tests for hooks and commands generators",
+            "description": "Create test/generators/hooks.test.ts and test/generators/commands.test.ts covering the pre-commit shell script, settings.json hooks config, and tracker-specific command files.",
+            "dependencies": [
+              1
+            ],
+            "details": "For hooks: test output is exactly 2 files; pre-commit.sh has executable flag set to true; content starts with '#!/usr/bin/env bash' shebang; contains 'set -euo pipefail'; contains ordered steps for format, lint, typecheck, build, test using npm run --if-present; settings.json is valid JSON; settings.json hooks section has PreToolUse matcher for 'Bash(git commit)' pointing to pre-commit.sh path. For commands: test output is always exactly 3 files (dev-next.md, review.md, boot-prompt.txt); taskmaster variant has 'task-master next' in dev-next.md; beads variant has 'bd show' in dev-next.md; markdown variant has 'TASKS.md' reference; review.md contains quality gate references; PROJECT_NAME substituted; no unresolved '{{...}}' placeholders remain.",
+            "status": "done",
+            "testStrategy": "Run npm test on hooks.test.ts and commands.test.ts; verify executable flag, bash syntax markers, JSON validity, tracker-specific content, and placeholder resolution.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Verify total test count meets ≥40 target and all tests pass",
+            "description": "Run the complete test suite, confirm all generator unit tests pass, count meets the ≥40 threshold, naming convention is followed, and typecheck reports zero errors.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Run 'npm test' and verify: all test files in test/generators/ pass with zero failures; total unit tests across mcp-json (target ≥6), claude-md (target ≥6), docs (target ≥6), rules (target ≥6), hooks (target ≥5), devcontainer (target ≥5), commands (target ≥6) sum to at least 40; test names consistently use 'smoke:' or 'demo:' prefix patterns; no trivial assertions like expect(true).toBe(true). Run 'npm run typecheck' and confirm zero TypeScript errors in test files. If any tests fail or type errors exist, fix them before marking task done. Log final test counts and typecheck result in subtask update.",
+            "status": "done",
+            "testStrategy": "npm test output shows all generator tests passing; npm run typecheck exits 0; grep for 'smoke:' and 'demo:' in test files confirms naming convention across all 7 required test files.",
+            "parentId": "undefined"
+          }
+        ],
+        "updatedAt": "2026-02-17T22:57:25.352Z"
       },
       {
         "id": "22",
@@ -1359,9 +1486,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-17T22:42:23.204Z",
+      "lastModified": "2026-02-18T07:49:32.452Z",
       "taskCount": 23,
-      "completedCount": 19,
+      "completedCount": 21,
       "tags": [
         "master"
       ]
