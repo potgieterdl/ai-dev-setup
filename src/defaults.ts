@@ -2,6 +2,8 @@ import path from "node:path";
 import type { ProjectConfig } from "./types.js";
 import { PACKAGE_MANAGERS } from "./pm.js";
 
+export { BUILTIN_PRESETS } from "./presets.js";
+
 /**
  * Returns a fully-populated default ProjectConfig.
  * The wizard starts with these defaults and overrides per user choices.

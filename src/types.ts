@@ -196,6 +196,38 @@ export interface HealthCheck {
   results: CheckResult[];
 }
 
+/**
+ * The subset of ProjectConfig fields that are saveable in a preset (F18).
+ * Excludes runtime fields like projectRoot, projectName, generatedFiles.
+ */
+export interface PresetConfig {
+  selectedMcps: string[];
+  taskTracker: TaskTracker;
+  architecture: Architecture;
+  selectedRules: string[];
+  selectedSkills: string[];
+  selectedHookSteps: string[];
+  pm?: PackageManagerName;
+  agentTeamsEnabled: boolean;
+  generateDocs: boolean;
+  generateRules: boolean;
+  generateSkills: boolean;
+  generateHooks: boolean;
+  generateCommands: boolean;
+  hasApiDocs: boolean;
+  hasDatabase: boolean;
+}
+
+/** A named, saveable wizard configuration (F18) */
+export interface Preset {
+  /** Unique identifier used on CLI (e.g. "fullstack", "minimal") */
+  name: string;
+  /** Human-readable description shown in the wizard picker */
+  description: string;
+  /** Partial ProjectConfig — fields stored in the preset */
+  config: PresetConfig;
+}
+
 /** Structured output from the Claude Code headless audit (F11) */
 export interface AuditResult {
   passes: string[];

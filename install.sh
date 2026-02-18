@@ -105,6 +105,11 @@ install_deps() {
 setup_bin() {
   mkdir -p "$BIN_DIR"
 
+  # Create presets directory for saved wizard configurations (F18)
+  PRESETS_DIR="${HOME}/.ai-dev-setup/presets"
+  mkdir -p "${PRESETS_DIR}"
+  pass "Created presets directory: ${PRESETS_DIR}"
+
   # Create a wrapper script rather than symlinking the .js file directly.
   # This ensures node resolves the script correctly regardless of PATH state.
   cat > "$BIN_DIR/ai-init" <<WRAPPER

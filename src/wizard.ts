@@ -6,6 +6,7 @@ import { commandExists, run } from "./utils.js";
 import { detectPackageManager, PACKAGE_MANAGERS, isValidPmName } from "./pm.js";
 import { checkClaudeAuthenticated } from "./audit.js";
 import { analyzeProject } from "./analyze.js";
+import { listPresets, applyPreset } from "./presets.js";
 
 /**
  * Check if the wizard is running in non-interactive mode.
@@ -566,6 +567,31 @@ export async function runWizard(projectRoot: string): Promise<ProjectConfig> {
     console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("  AI Project Init — Setup Wizard");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
+    // Preset picker: offer presets before the manual wizard steps (F18)
+    const presetEnv = process.env.SETUP_AI_PRESET;
+    if (!presetEnv) {
+      const allPresets = await listPresets();
+      if (allPresets.length > 0) {
+        const choices = [
+          ...allPresets.map((p) => ({
+            name: `${p.name.padEnd(20)} ${p.description}`,
+            value: p.name,
+          })),
+          { name: "Configure manually      Step-by-step wizard", value: "__manual__" },
+        ];
+
+        const presetChoice = (await select({
+          message: "Start from a preset or configure manually?",
+          choices,
+        })) as string;
+
+        if (presetChoice !== "__manual__") {
+          const preset = allPresets.find((p) => p.name === presetChoice)!;
+          return applyPreset(preset, config);
+        }
+      }
+    }
   }
 
   // Step 0: Claude Code Bootstrap

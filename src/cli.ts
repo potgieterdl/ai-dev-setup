@@ -9,6 +9,15 @@ import { runAudit, checkClaudeCodeAvailable, installClaudeCode } from "./audit.j
 import { defaultConfig } from "./defaults.js";
 import { isValidPmName } from "./pm.js";
 import { writeSavedConfig } from "./utils.js";
+import {
+  loadPreset,
+  savePreset,
+  listPresets,
+  exportPreset,
+  importPreset,
+  applyPreset,
+  PRESETS_DIR,
+} from "./presets.js";
 import type { ProjectConfig, SavedConfig } from "./types.js";
 
 const cli = meow(
@@ -23,14 +32,21 @@ const cli = meow(
     post-start      Per-session setup — run on every container start
     update          Incrementally reconfigure after initial setup
     doctor          Validate the AI dev environment setup
+    presets         List, export, or import preset configurations
 
   Options
-    --non-interactive   Skip prompts, use environment variables
-    --no-audit          Skip the Claude Code audit step
-    --overwrite         Overwrite existing files (default: true)
-    --pm <name>         Force package manager: npm | pnpm | yarn | bun
-    --version           Show version
-    --help              Show help
+    --non-interactive     Skip prompts, use environment variables
+    --no-audit            Skip the Claude Code audit step
+    --overwrite           Overwrite existing files (default: true)
+    --pm <name>           Force package manager: npm | pnpm | yarn | bun
+    --preset <name>       Apply a preset (skips wizard, runs immediately)
+    --save-preset <name>  Save wizard choices as a named preset
+    --version             Show version
+    --help                Show help
+
+  Preset Options (for 'ai-init presets')
+    --export=<name>       Export preset to stdout as JSON
+    --import=<file>       Import a preset from a JSON file
 
   Update Options (for 'ai-init update')
     --add-mcp=<name>      Add an MCP server
@@ -50,6 +66,7 @@ const cli = meow(
     SETUP_AI_AGENT_TEAMS=1      Enable agent teams
     SETUP_AI_PM                 npm | pnpm | yarn | bun
     SETUP_AI_PRD_PATH           Path to existing PRD file
+    SETUP_AI_PRESET             Preset name (non-interactive mode)
 `,
   {
     importMeta: import.meta,
@@ -58,6 +75,12 @@ const cli = meow(
       audit: { type: "boolean", default: true },
       overwrite: { type: "boolean", default: true },
       pm: { type: "string" },
+      // Preset flags (F18)
+      preset: { type: "string", shortFlag: "p" },
+      savePreset: { type: "string" },
+      // Preset subcommand flags (F18)
+      export: { type: "string" },
+      import: { type: "string" },
       // Update subcommand flags (F16)
       addMcp: { type: "string" },
       removeMcp: { type: "string" },
@@ -158,18 +181,55 @@ async function main(): Promise<void> {
       break;
     }
 
+    case "presets": {
+      // Preset management subcommand (F18)
+      const exportName = cli.flags.export;
+      const importFile = cli.flags.import;
+
+      if (exportName) {
+        const json = await exportPreset(exportName);
+        process.stdout.write(json + "\n");
+      } else if (importFile) {
+        const p = await importPreset(importFile);
+        console.log(`[ai-init] Imported preset "${p.name}" to ${PRESETS_DIR}.`);
+      } else {
+        // List presets
+        const presets = await listPresets();
+        console.log("\n  Available presets:\n");
+        for (const p of presets) {
+          console.log(`    ${p.name.padEnd(20)} ${p.description}`);
+        }
+        console.log("");
+      }
+      process.exit(0);
+      break;
+    }
+
     default: {
       // Default: interactive wizard flow (F6)
+      let config: ProjectConfig;
 
-      // Step 0: Ensure Claude Code is installed for audit capability
-      if (!(await checkClaudeCodeAvailable())) {
-        await installClaudeCode().catch(() => {
-          console.warn("[ai-init] Could not install Claude Code — audit will be skipped.");
-        });
+      // --preset=name: bypass wizard, apply preset directly (F18)
+      if (cli.flags.preset) {
+        const preset = await loadPreset(cli.flags.preset);
+        if (!preset) {
+          console.error(
+            `[ai-init] Preset "${cli.flags.preset}" not found. Run "ai-init presets" to list available presets.`
+          );
+          process.exit(1);
+        }
+        config = applyPreset(preset, defaultConfig(projectRoot));
+      } else {
+        // Step 0: Ensure Claude Code is installed for audit capability
+        if (!(await checkClaudeCodeAvailable())) {
+          await installClaudeCode().catch(() => {
+            console.warn("[ai-init] Could not install Claude Code — audit will be skipped.");
+          });
+        }
+
+        applyPmOverride();
+        config = await runWizard(projectRoot);
       }
-
-      applyPmOverride();
-      const config = await runWizard(projectRoot);
 
       // Apply CLI flags
       if (!cli.flags.audit) {
@@ -178,6 +238,12 @@ async function main(): Promise<void> {
 
       const written = await runPostCreate(config, cli.flags.overwrite);
       printGeneratedFiles(written);
+
+      // --save-preset=name: save wizard result as a named preset (F18)
+      if (cli.flags.savePreset) {
+        await savePreset(cli.flags.savePreset, config);
+        console.log(`[ai-init] Preset "${cli.flags.savePreset}" saved to ${PRESETS_DIR}.`);
+      }
 
       // Persist wizard choices for incremental updates (F16)
       await writeSavedConfig(projectRoot, toSavedConfig(config));
