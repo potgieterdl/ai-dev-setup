@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { generateClaudeMd } from "../../src/generators/claude-md.js";
 import { defaultConfig } from "../../src/defaults.js";
+import { PACKAGE_MANAGERS } from "../../src/pm.js";
 import type { ProjectConfig } from "../../src/types.js";
 
 function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
@@ -160,6 +161,33 @@ describe("generateClaudeMd", () => {
       const result = generateClaudeMd(makeConfig({ selectedMcps: ["taskmaster", "beads"] }));
       const mcpFile = result.find((f) => f.path === "CLAUDE_MCP.md");
       expect(mcpFile!.content).toContain("---");
+    });
+  });
+
+  describe("package manager awareness (F15)", () => {
+    it("demo: quality gate uses pnpm commands when pm is pnpm", () => {
+      const result = generateClaudeMd(makeConfig({ pm: PACKAGE_MANAGERS.pnpm }));
+      const content = result[0].content;
+      expect(content).toContain("pnpm format");
+      expect(content).toContain("pnpm lint");
+      expect(content).toContain("pnpm build");
+      expect(content).toContain("pnpm test");
+      expect(content).not.toContain("npm run");
+    });
+
+    it("demo: quality gate uses yarn commands when pm is yarn", () => {
+      const result = generateClaudeMd(makeConfig({ pm: PACKAGE_MANAGERS.yarn }));
+      const content = result[0].content;
+      expect(content).toContain("yarn format");
+      expect(content).toContain("yarn lint");
+      expect(content).toContain("yarn test");
+    });
+
+    it("demo: quality gate uses npm commands by default", () => {
+      const result = generateClaudeMd(makeConfig());
+      const content = result[0].content;
+      expect(content).toContain("npm run format");
+      expect(content).toContain("npm test");
     });
   });
 

@@ -19,15 +19,15 @@
 
 ## Key Commands
 
-| Command             | What It Does              |
-| ------------------- | ------------------------- |
-| `npm install`       | Install dependencies      |
-| `npm run build`     | Build the project         |
-| `npm test`          | Run the test suite        |
-| `npm run lint`      | Lint and fix code         |
-| `npm run format`    | Format code with Prettier |
-| `npm run typecheck` | Check TypeScript types    |
-| `npm run dev`       | Start development mode    |
+| Command                | What It Does              |
+| ---------------------- | ------------------------- |
+| `{{PM_INSTALL}}`       | Install dependencies      |
+| `{{PM_RUN}} build`     | Build the project         |
+| `{{PM_TEST}}`          | Run the test suite        |
+| `{{PM_RUN}} lint`      | Lint and fix code         |
+| `{{PM_RUN}} format`    | Format code with Prettier |
+| `{{PM_RUN}} typecheck` | Check TypeScript types    |
+| `{{PM_RUN}} dev`       | Start development mode    |
 
 ## Where to Find Things
 
@@ -46,10 +46,10 @@
 
 ### For Developers
 
-1. Clone the repo and run `npm install`
+1. Clone the repo and run `{{PM_INSTALL}}`
 2. Read `docs/prd.md` for project context
 3. Check `docs/architecture.md` for system design
-4. Run `npm test` to verify everything works
+4. Run `{{PM_TEST}}` to verify everything works
 5. Check the task tracker for your next assignment
 
 ### For AI Agents

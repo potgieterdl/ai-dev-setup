@@ -320,13 +320,13 @@ describe("hooks templates", () => {
     expect(content.startsWith("#!/usr/bin/env bash")).toBe(true);
   });
 
-  it("pre-commit.sh runs format, lint, typecheck, build, and test", async () => {
+  it("pre-commit.sh has PM placeholders for format, lint, typecheck, build, and test", async () => {
     const content = await fs.readFile(path.join(HOOKS_DIR, "pre-commit.sh"), "utf8");
-    expect(content).toContain("npm run format");
-    expect(content).toContain("npm run lint");
-    expect(content).toContain("npm run typecheck");
-    expect(content).toContain("npm run build");
-    expect(content).toContain("npm test");
+    expect(content).toContain("{{PM_RUN_IF_PRESENT}} format");
+    expect(content).toContain("{{PM_RUN_IF_PRESENT}} lint");
+    expect(content).toContain("{{PM_RUN_IF_PRESENT}} typecheck");
+    expect(content).toContain("{{PM_RUN_IF_PRESENT}} build");
+    expect(content).toContain("{{PM_TEST}}");
   });
 });
 

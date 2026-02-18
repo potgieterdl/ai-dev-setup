@@ -42,6 +42,13 @@ export async function generateRules(config: ProjectConfig): Promise<FileDescript
     PROJECT_NAME: config.projectName,
     TASK_TRACKER: config.taskTracker,
     LANGUAGE: "TypeScript",
+    PM_NAME: config.pm.name,
+    PM_RUN: config.pm.run,
+    PM_INSTALL: config.pm.install,
+    PM_EXEC: config.pm.exec,
+    PM_TEST: config.pm.test,
+    PM_RUN_IF_PRESENT: config.pm.runIfPresent,
+    PM_INSTALL_GLOBAL: config.pm.installGlobal,
   };
 
   const selected = new Set(config.selectedRules);

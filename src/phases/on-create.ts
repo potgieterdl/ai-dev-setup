@@ -7,6 +7,10 @@ import { run, commandExists } from "../utils.js";
  * It installs global npm packages (Claude Code, Task Master) that are
  * required for the AI-assisted development workflow.
  *
+ * ADR: Global tool installs always use `npm install -g` regardless of the
+ * project's package manager. These are system-level dev tools, not project
+ * dependencies — npm is the universal baseline available in all Node environments.
+ *
  * Idempotent: skips installation if the tool is already on PATH.
  */
 export async function runOnCreate(): Promise<void> {

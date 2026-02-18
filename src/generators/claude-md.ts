@@ -96,18 +96,19 @@ Multiple rules compose — when editing \`src/api/users.ts\`, rules for api, sec
 }
 
 /**
- * Build the quality gate section.
+ * Build the quality gate section using PM-aware commands.
  */
-function buildQualityGate(): string {
+function buildQualityGate(config: ProjectConfig): string {
+  const { pm } = config;
   return `## Quality Gate
 
 Before marking any task done:
 
-1. Format: \`npm run format\`
-2. Lint: \`npm run lint\`
-3. Type-check: \`npm run typecheck\`
-4. Build: \`npm run build\`
-5. Test: \`npm test\`
+1. Format: \`${pm.run} format\`
+2. Lint: \`${pm.run} lint\`
+3. Type-check: \`${pm.run} typecheck\`
+4. Build: \`${pm.run} build\`
+5. Test: \`${pm.test}\`
 
 Never mark a task done if any step fails. Fix issues first.`;
 }
@@ -138,7 +139,7 @@ export function generateClaudeMd(config: ProjectConfig): FileDescriptor[] {
     sections.push(rulesSection, "");
   }
 
-  sections.push(buildQualityGate());
+  sections.push(buildQualityGate(config));
 
   const files: FileDescriptor[] = [
     {

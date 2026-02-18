@@ -3,6 +3,28 @@
  * The central ProjectConfig type drives all code generation.
  */
 
+/** Supported package manager names */
+export type PackageManagerName = "npm" | "pnpm" | "yarn" | "bun";
+
+/** Package manager command abstraction */
+export interface PackageManager {
+  name: PackageManagerName;
+  /** CI install command, e.g. "npm ci" or "pnpm install --frozen-lockfile" */
+  install: string;
+  /** Global install prefix, e.g. "npm install -g" or "pnpm add -g" */
+  installGlobal: string;
+  /** Script run command, e.g. "npm run" or "pnpm" */
+  run: string;
+  /** Package executor, e.g. "npx" or "pnpm dlx" */
+  exec: string;
+  /** Lock file name, e.g. "package-lock.json" or "pnpm-lock.yaml" */
+  lockFile: string;
+  /** Run script with --if-present flag, e.g. "npm run --if-present" */
+  runIfPresent: string;
+  /** Test command, e.g. "npm test" or "pnpm test" */
+  test: string;
+}
+
 /** Supported task tracker integrations */
 export type TaskTracker = "taskmaster" | "beads" | "markdown";
 
@@ -65,6 +87,9 @@ export interface ProjectConfig {
   // Derived from selections
   hasApiDocs: boolean;
   hasDatabase: boolean;
+
+  // Package manager (F15)
+  pm: PackageManager;
 
   // Project metadata
   projectName: string;

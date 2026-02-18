@@ -21,10 +21,15 @@ function buildClaudeCodeMcpConfig(config: ProjectConfig): Record<string, McpServ
   const servers = getSelectedServers(config.selectedMcps);
   const result: Record<string, McpServerEntry> = {};
 
+  const execCmd = config.pm.exec;
+  // npx uses "-y" flag; pnpm dlx, yarn dlx, bunx do not
+  const needsYFlag = execCmd === "npx";
+
   for (const server of servers) {
+    const defaultArgs = needsYFlag ? ["-y", server.npmPackage] : [server.npmPackage];
     const entry: McpServerEntry = {
-      command: "npx",
-      args: server.args ?? ["-y", server.npmPackage],
+      command: execCmd,
+      args: server.args ?? defaultArgs,
     };
 
     if (server.env && Object.keys(server.env).length > 0) {
@@ -45,6 +50,8 @@ function buildClaudeCodeMcpConfig(config: ProjectConfig): Record<string, McpServ
 function buildVscodeMcpConfig(config: ProjectConfig): Record<string, VscodeMcpServerEntry> {
   const servers = getSelectedServers(config.selectedMcps);
   const result: Record<string, VscodeMcpServerEntry> = {};
+  const execCmd = config.pm.exec;
+  const needsYFlag = execCmd === "npx";
 
   for (const server of servers) {
     const envBlock: Record<string, string> = {};
@@ -52,9 +59,10 @@ function buildVscodeMcpConfig(config: ProjectConfig): Record<string, VscodeMcpSe
       envBlock[key] = `\${env:${key}}`;
     }
 
+    const defaultArgs = needsYFlag ? ["-y", server.npmPackage] : [server.npmPackage];
     const entry: VscodeMcpServerEntry = {
-      command: "npx",
-      args: server.args ?? ["-y", server.npmPackage],
+      command: execCmd,
+      args: server.args ?? defaultArgs,
       cwd: "${workspaceFolder}",
       envFile: "${workspaceFolder}/.env",
       type: "stdio",

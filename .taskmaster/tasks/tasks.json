@@ -1767,7 +1767,7 @@
         "description": "Auto-detect the project's package manager (npm/pnpm/yarn/bun) via lock files and the `packageManager` field in package.json, create a `PackageManager` interface abstracting install/run/exec/global commands, and replace all hardcoded `npm` references in generators and templates with PM-aware values.",
         "details": "## Overview\n\nThis task implements F15 as specified in `docs/features/F15-package-manager-detection.md`. The goal is to make every generated file and lifecycle command PM-aware instead of hardcoding `npm`.\n\n---\n\n## 1. Update `src/types.ts`\n\nAdd the `PackageManager` interface and a `pm` field to `ProjectConfig`:\n\n```typescript\n/** Supported package managers */\nexport type PackageManagerName = \"npm\" | \"pnpm\" | \"yarn\" | \"bun\";\n\nexport interface PackageManager {\n  name: PackageManagerName;\n  install: string;          // e.g. \"npm ci\" | \"pnpm install --frozen-lockfile\"\n  installGlobal: string;    // e.g. \"npm install -g\" | \"pnpm add -g\"\n  run: string;              // e.g. \"npm run\" | \"pnpm\" | \"yarn\" | \"bun run\"\n  exec: string;             // e.g. \"npx\" | \"pnpm dlx\" | \"yarn dlx\" | \"bunx\"\n  lockFile: string;         // e.g. \"package-lock.json\" | \"pnpm-lock.yaml\"\n  runIfPresent: string;     // e.g. \"npm run --if-present\" | \"pnpm run --if-present\"\n}\n\n// In ProjectConfig, add:\npm: PackageManager;\n```\n\n---\n\n## 2. Create `src/pm.ts` (or add to `src/utils.ts`)\n\nAdd a `PACKAGE_MANAGERS` map and `detectPackageManager()` function:\n\n```typescript\nimport fs from 'node:fs/promises';\nimport path from 'node:path';\nimport { PackageManager, PackageManagerName } from './types.js';\n\nexport const PACKAGE_MANAGERS: Record<PackageManagerName, PackageManager> = {\n  npm: {\n    name: 'npm',\n    install: 'npm ci',\n    installGlobal: 'npm install -g',\n    run: 'npm run',\n    exec: 'npx',\n    lockFile: 'package-lock.json',\n    runIfPresent: 'npm run --if-present',\n  },\n  pnpm: {\n    name: 'pnpm',\n    install: 'pnpm install --frozen-lockfile',\n    installGlobal: 'pnpm add -g',\n    run: 'pnpm',\n    exec: 'pnpm dlx',\n    lockFile: 'pnpm-lock.yaml',\n    runIfPresent: 'pnpm run --if-present',\n  },\n  yarn: {\n    name: 'yarn',\n    install: 'yarn install --immutable',\n    installGlobal: 'yarn global add',\n    run: 'yarn',\n    exec: 'yarn dlx',\n    lockFile: 'yarn.lock',\n    runIfPresent: 'yarn run --if-present',\n  },\n  bun: {\n    name: 'bun',\n    install: 'bun install --frozen-lockfile',\n    installGlobal: 'bun add -g',\n    run: 'bun run',\n    exec: 'bunx',\n    lockFile: 'bun.lock',\n    runIfPresent: 'bun run --if-present',\n  },\n};\n\n/**\n * Detect package manager using (in priority order):\n * 1. Lock file presence in projectRoot\n * 2. packageManager field in package.json\n * 3. Defaults to npm\n */\nexport async function detectPackageManager(projectRoot: string): Promise<PackageManager> {\n  // Priority 1: lock files\n  const lockFileMap: Record<string, PackageManagerName> = {\n    'package-lock.json': 'npm',\n    'pnpm-lock.yaml': 'pnpm',\n    'yarn.lock': 'yarn',\n    'bun.lock': 'bun',\n    'bun.lockb': 'bun',\n  };\n  for (const [lockFile, pmName] of Object.entries(lockFileMap)) {\n    try {\n      await fs.access(path.join(projectRoot, lockFile));\n      return PACKAGE_MANAGERS[pmName];\n    } catch { /* not found */ }\n  }\n\n  // Priority 2: packageManager field\n  try {\n    const pkgJson = JSON.parse(\n      await fs.readFile(path.join(projectRoot, 'package.json'), 'utf8')\n    );\n    if (pkgJson.packageManager) {\n      const pmName = pkgJson.packageManager.split('@')[0] as PackageManagerName;\n      if (PACKAGE_MANAGERS[pmName]) return PACKAGE_MANAGERS[pmName];\n    }\n  } catch { /* no package.json */ }\n\n  // Fallback\n  return PACKAGE_MANAGERS.npm;\n}\n```\n\n---\n\n## 3. Update `src/wizard.ts`\n\n- Import `detectPackageManager` from `./pm.js` (or `./utils.js`)\n- At the start of the wizard (after step 0), auto-detect PM from `process.cwd()`\n- Add a wizard step to confirm or override if detection is ambiguous (no lock file found)\n- Add result to the returned `ProjectConfig` as `pm`\n\n---\n\n## 4. Update `src/cli.ts`\n\n- Add `--pm` flag to the meow config: `pm: { type: 'string', shortFlag: 'p' }`\n- If `--pm` flag is provided and is a valid `PackageManagerName`, override the detected PM\n- Pass the resolved `PackageManager` into `ProjectConfig.pm`\n\n---\n\n## 5. Update `src/generators/claude-md.ts`\n\nReplace hardcoded `npm run` in the quality gate section (around line 106–110) with PM-aware commands using `config.pm.run`:\n\n```typescript\n// Before:\n`1. **Format:** \\`npm run format\\``\n\n// After:\n`1. **Format:** \\`${config.pm.run} format\\``\n// Similarly for lint, typecheck, build\n// For test: use config.pm.run + ' test' or config.pm.exec for test runners\n```\n\n---\n\n## 6. Update `src/generators/hooks.ts`\n\nReplace any `npm run --if-present` references with `config.pm.runIfPresent`:\n\n```typescript\n// In the pre-commit hook content/template variables:\nconst vars = {\n  PM_RUN_IF_PRESENT: config.pm.runIfPresent,\n  PM_RUN: config.pm.run,\n};\n```\n\n---\n\n## 7. Update `src/generators/devcontainer.ts`\n\nReplace hardcoded npm references in lifecycle commands if present. Use `config.pm.install` for the postCreate install step.\n\n---\n\n## 8. Update `src/generators/docs.ts`\n\nPass PM-specific template variables to `fillTemplate()` calls:\n\n```typescript\nconst vars = {\n  PROJECT_NAME: config.projectName,\n  ARCHITECTURE: config.architecture,\n  DATE: new Date().toISOString().split('T')[0],\n  TASK_TRACKER: config.taskTracker,\n  PM_NAME: config.pm.name,\n  PM_RUN: config.pm.run,\n  PM_INSTALL: config.pm.install,\n  PM_EXEC: config.pm.exec,\n};\n```\n\n---\n\n## 9. Update `templates/hooks/pre-commit.sh`\n\nReplace all 5 hardcoded `npm run` occurrences with `{{PM_RUN_IF_PRESENT}}`:\n\n```bash\n# Before:\nnpm run --if-present lint\n\n# After:\n{{PM_RUN_IF_PRESENT}} lint\n```\n\n---\n\n## 10. Update `templates/rules/general.md`\n\nReplace `npm` references (lines 17–20) with `{{PM_NAME}}` and `{{PM_INSTALL}}`:\n\n```markdown\n<!-- Before -->\nUse npm for dependency management\n\n<!-- After -->\nUse {{PM_NAME}} for dependency management. Run `{{PM_INSTALL}}` in CI.\n```\n\n---\n\n## 11. Update `templates/docs/onboarding.md`\n\nReplace all `npm install`, `npm run build`, `npm test`, `npm run lint`, `npm run format`, `npm run dev` with PM-aware placeholders:\n\n```markdown\n<!-- Before -->\nnpm install\n\n<!-- After -->\n{{PM_INSTALL}}\n```\n\n---\n\n## 12. Verify `src/phases/on-create.ts`\n\nGlobal installs (`npm install -g`) should remain as `npm install -g` for system-level tools (Claude Code, Task Master) since global tool installation is separate from project-level PM. Document this decision with a comment. Alternatively, use `config.pm.installGlobal` if the spec requires it.\n\n---\n\n## Template Variable Summary\n\nEnsure `fillTemplate()` in `src/utils.ts` supports these new vars across all generators:\n\n| Placeholder | Source |\n|---|---|\n| `{{PM_NAME}}` | `config.pm.name` |\n| `{{PM_RUN}}` | `config.pm.run` |\n| `{{PM_INSTALL}}` | `config.pm.install` |\n| `{{PM_EXEC}}` | `config.pm.exec` |\n| `{{PM_RUN_IF_PRESENT}}` | `config.pm.runIfPresent` |\n| `{{PM_INSTALL_GLOBAL}}` | `config.pm.installGlobal` |\n",
         "testStrategy": "### Unit Tests: `test/pm.test.ts`\n\n1. **Lock file detection:**\n   - Create temp dir with `package-lock.json` → `detectPackageManager()` returns `npm`\n   - Create temp dir with `pnpm-lock.yaml` → returns `pnpm`\n   - Create temp dir with `yarn.lock` → returns `yarn`\n   - Create temp dir with `bun.lock` → returns `bun`\n   - Create temp dir with `bun.lockb` → returns `bun`\n   - Empty temp dir (no lock file, no package.json) → returns `npm` (fallback)\n\n2. **packageManager field detection:**\n   - Temp dir with `package.json` containing `\"packageManager\": \"pnpm@9.15.0\"` and no lock file → returns `pnpm`\n   - Temp dir with `package.json` containing `\"packageManager\": \"yarn@4.0.0\"` → returns `yarn`\n\n3. **Lock file takes priority over packageManager field:**\n   - Temp dir with `package-lock.json` AND `package.json` `\"packageManager\": \"pnpm@9\"` → returns `npm` (lock file wins)\n\n4. **PACKAGE_MANAGERS constant:**\n   - All 4 entries exist (`npm`, `pnpm`, `yarn`, `bun`)\n   - Each has non-empty `install`, `installGlobal`, `run`, `exec`, `lockFile`, `runIfPresent`\n\n### Unit Tests: `test/generators/claude-md.test.ts`\n\n5. With `config.pm = PACKAGE_MANAGERS.pnpm` → generated CLAUDE.md quality gate contains `pnpm format`, `pnpm lint`, `pnpm build`, `pnpm test`\n6. With `config.pm = PACKAGE_MANAGERS.yarn` → quality gate contains `yarn format` etc.\n7. With `config.pm = PACKAGE_MANAGERS.npm` → quality gate contains `npm run format` etc.\n\n### Unit Tests: `test/generators/hooks.test.ts`\n\n8. With `config.pm = PACKAGE_MANAGERS.pnpm` → pre-commit.sh contains `pnpm run --if-present lint` (no `npm` anywhere)\n9. With `config.pm = PACKAGE_MANAGERS.bun` → pre-commit.sh contains `bun run --if-present`\n\n### Unit Tests: `test/generators/docs.test.ts`\n\n10. With `config.pm = PACKAGE_MANAGERS.pnpm` → `onboarding.md` content contains `pnpm install --frozen-lockfile` and `pnpm` (no bare `npm`)\n11. `general.md` rule content substitutes `{{PM_NAME}}` with `pnpm`\n\n### CLI Flag Test\n\n12. Run `ai-init --pm=pnpm --non-interactive` in a temp dir → resulting CLAUDE.md contains `pnpm` commands (integration test or snapshot test)\n13. Run `ai-init --pm=invalid` → CLI exits with an error message listing valid PM names\n\n### Regression Test\n\n14. All existing tests pass with default `npm` PM (no regressions from adding `pm` field to `ProjectConfig`).\n15. Run `npm run typecheck` / `tsc --noEmit` with no errors after adding `pm` to `ProjectConfig` and all generators using it.\n16. Run `npm run lint` — no ESLint errors introduced.\n17. Run `npm run build` — compiles without errors.\n18. Run `npm test` — full Vitest suite green.",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "3",
           "5",
@@ -1778,7 +1778,152 @@
           "12"
         ],
         "priority": "high",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add PackageManager types and pm field to ProjectConfig",
+            "description": "Add PackageManagerName type, PackageManager interface to src/types.ts, and add pm field to ProjectConfig. Update src/defaults.ts to include a default npm PackageManager.",
+            "dependencies": [],
+            "details": "In src/types.ts, add: `export type PackageManagerName = 'npm' | 'pnpm' | 'yarn' | 'bun';` and the full `PackageManager` interface with fields: name, install, installGlobal, run, exec, lockFile, runIfPresent. Add `pm: PackageManager` to the ProjectConfig interface. In src/defaults.ts, import PACKAGE_MANAGERS from the new pm module (created in subtask 2) and set `pm: PACKAGE_MANAGERS.npm` as the default. Verify TypeScript compiles with no errors after these additions.",
+            "status": "done",
+            "testStrategy": "Run `npm run typecheck` to verify no TypeScript errors. Ensure all existing code that destructures ProjectConfig still works after adding the pm field.",
+            "updatedAt": "2026-02-18T17:58:56.592Z",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Create src/pm.ts with PACKAGE_MANAGERS map and detectPackageManager()",
+            "description": "Create a new src/pm.ts module that exports the PACKAGE_MANAGERS constant (all four PM configurations) and an async detectPackageManager(projectRoot) function that checks lock files then package.json packageManager field, falling back to npm.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create /workspaces/ai-dev-setup/src/pm.ts with: (1) Import `fs from 'node:fs/promises'`, `path from 'node:path'`, and types from './types.js'. (2) Export `PACKAGE_MANAGERS: Record<PackageManagerName, PackageManager>` with entries for npm (install:'npm ci', installGlobal:'npm install -g', run:'npm run', exec:'npx', lockFile:'package-lock.json', runIfPresent:'npm run --if-present'), pnpm (install:'pnpm install --frozen-lockfile', installGlobal:'pnpm add -g', run:'pnpm', exec:'pnpm dlx', lockFile:'pnpm-lock.yaml', runIfPresent:'pnpm run --if-present'), yarn (install:'yarn install --immutable', installGlobal:'yarn global add', run:'yarn', exec:'yarn dlx', lockFile:'yarn.lock', runIfPresent:'yarn run --if-present'), bun (install:'bun install --frozen-lockfile', installGlobal:'bun add -g', run:'bun run', exec:'bunx', lockFile:'bun.lock', runIfPresent:'bun run --if-present'). (3) Export async `detectPackageManager(projectRoot: string): Promise<PackageManager>` that checks for lock files in priority order (package-lock.json, pnpm-lock.yaml, yarn.lock, bun.lock, bun.lockb), then reads packageManager field from package.json, then falls back to npm.",
+            "status": "done",
+            "testStrategy": "Create test/pm.test.ts with tests: (1) temp dir with package-lock.json returns npm, (2) pnpm-lock.yaml returns pnpm, (3) yarn.lock returns yarn, (4) bun.lock returns bun, (5) package.json with `packageManager: 'pnpm@9.0.0'` returns pnpm, (6) empty dir returns npm fallback, (7) PACKAGE_MANAGERS has exactly 4 entries with all required fields.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T17:59:41.336Z"
+          },
+          {
+            "id": 3,
+            "title": "Integrate PM detection into wizard.ts and add --pm flag to cli.ts",
+            "description": "Update src/wizard.ts to auto-detect the package manager from process.cwd() early in the wizard and optionally prompt the user to confirm/override when detection is ambiguous. Add `--pm` flag to the meow config in src/cli.ts to allow CLI override.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "In src/wizard.ts: (1) Import `detectPackageManager` and `PACKAGE_MANAGERS` from './pm.js'. (2) At the start of the wizard (before or after step 0), call `detectPackageManager(process.cwd())` to get detected PM. (3) If no lock file is found (detection fell back to npm due to package.json or default), add a new wizard step using Inquirer to present a list of PM choices (npm/pnpm/yarn/bun) with the detected one pre-selected. (4) Assign the resolved PM to `config.pm`. In src/cli.ts: (1) Add `pm: { type: 'string', shortFlag: 'p' }` to the meow flags config. (2) After detection in the wizard or before calling runWizard, check if `flags.pm` is a valid PackageManagerName. If valid, override `config.pm = PACKAGE_MANAGERS[flags.pm]`. Ensure non-interactive mode (--non-interactive flag) works with auto-detected PM.",
+            "status": "done",
+            "testStrategy": "Manual test: run the wizard in a directory with pnpm-lock.yaml and verify PM is auto-detected as pnpm. Test `--pm yarn` flag overrides detected PM. Test `--pm invalid` gives a helpful error message.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T18:01:44.363Z"
+          },
+          {
+            "id": 4,
+            "title": "Update templates/hooks/pre-commit.sh with PM placeholder variables",
+            "description": "Replace all 5 hardcoded `npm run --if-present` occurrences in templates/hooks/pre-commit.sh with the {{PM_RUN_IF_PRESENT}} template placeholder.",
+            "dependencies": [],
+            "details": "Read /workspaces/ai-dev-setup/templates/hooks/pre-commit.sh. Replace each occurrence of `npm run format --if-present`, `npm run lint --if-present`, `npm run typecheck --if-present`, `npm run build --if-present`, and `npm test --if-present` (or similar `npm run --if-present` variants) with `{{PM_RUN_IF_PRESENT}} format`, `{{PM_RUN_IF_PRESENT}} lint`, `{{PM_RUN_IF_PRESENT}} typecheck`, `{{PM_RUN_IF_PRESENT}} build`, and `{{PM_RUN_IF_PRESENT}} test` respectively. Ensure the shell script remains valid after substitution. Verify the conditional step snippets structure is preserved.",
+            "status": "done",
+            "testStrategy": "After hooks generator update (subtask 5), generate a pre-commit hook for each PM and verify the correct commands appear: `npm run --if-present lint` for npm, `pnpm run --if-present lint` for pnpm, `yarn run --if-present lint` for yarn, `bun run --if-present lint` for bun.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T18:02:16.987Z"
+          },
+          {
+            "id": 5,
+            "title": "Update src/generators/hooks.ts to use PM-aware commands",
+            "description": "Replace hardcoded `npm run` and `npm test` strings in the STEP_SNIPPETS object in src/generators/hooks.ts with config.pm.run and config.pm.runIfPresent references. Pass PM variables when calling fillTemplate for the pre-commit.sh template.",
+            "dependencies": [
+              1,
+              2,
+              4
+            ],
+            "details": "Read /workspaces/ai-dev-setup/src/generators/hooks.ts. (1) The STEP_SNIPPETS object (lines 6-31) contains per-step shell snippets with hardcoded `npm run --if-present` calls. Refactor generateHooks() to accept `config: ProjectConfig` and replace the hardcoded strings dynamically. If STEP_SNIPPETS is a static object, convert it to a function `buildStepSnippets(pm: PackageManager)` that returns the same structure with `pm.runIfPresent` substituted in. (2) When calling fillTemplate() or building the pre-commit.sh content, add PM_RUN_IF_PRESENT and PM_RUN to the template variables object: `{ ...existingVars, PM_RUN_IF_PRESENT: config.pm.runIfPresent, PM_RUN: config.pm.run }`. (3) Ensure the generator still respects selectedHookSteps and only includes chosen steps.",
+            "status": "done",
+            "testStrategy": "Unit test test/generators/hooks.test.ts: (1) generate hooks with pnpm config, verify output contains `pnpm run --if-present lint` not `npm run --if-present lint`. (2) Generate with npm config, verify output contains `npm run --if-present`. (3) All existing tests still pass.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T18:02:59.782Z"
+          },
+          {
+            "id": 6,
+            "title": "Update src/generators/claude-md.ts quality gate section with PM commands",
+            "description": "Replace hardcoded `npm run format`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm test` in the buildQualityGate() function (lines 106-110) with PM-aware commands using config.pm.run.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Read /workspaces/ai-dev-setup/src/generators/claude-md.ts. In the buildQualityGate() function or equivalent section (around lines 101-113), replace template literal strings containing hardcoded npm commands. Change `\\`npm run format\\`` to `\\`${config.pm.run} format\\``, `\\`npm run lint\\`` to `\\`${config.pm.run} lint\\``, `\\`npm run typecheck\\`` to `\\`${config.pm.run} typecheck\\``, `\\`npm run build\\`` to `\\`${config.pm.run} build\\``, and `\\`npm test\\`` to `\\`${config.pm.run} test\\``. Ensure config: ProjectConfig is passed to the function that builds the quality gate section. If it is a standalone function, add the config parameter and update all call sites.",
+            "status": "done",
+            "testStrategy": "Unit test: generate CLAUDE.md with pnpm config, verify quality gate section contains `pnpm format`, `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test`. Generate with yarn config, verify `yarn format` etc. appear.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T18:03:44.052Z"
+          },
+          {
+            "id": 7,
+            "title": "Update src/generators/devcontainer.ts with PM-aware global install commands",
+            "description": "Replace the hardcoded `npm install -g` global install commands in src/generators/devcontainer.ts with config.pm.installGlobal. Update the postCreateCommand to use PM-aware install.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Read /workspaces/ai-dev-setup/src/generators/devcontainer.ts. Find line 91 (or wherever `npm install -g` appears for installing Claude Code and task-master-ai globally) and replace with `${config.pm.installGlobal}`. For example: change `npm install -g @anthropic-ai/claude-code` to `${config.pm.installGlobal} @anthropic-ai/claude-code`. Also check if there's a postCreateCommand that runs `npm install` for project dependencies and update it to use `config.pm.install`. Note: Per the spec, it may be appropriate to keep global tool installs as `npm install -g` since system-level tools should use npm regardless of project PM — add a code comment documenting this decision if keeping npm for globals.",
+            "status": "done",
+            "testStrategy": "Generate devcontainer.json with pnpm config and verify the postCreate command uses `pnpm install --frozen-lockfile`. Verify global tool installs are handled consistently as documented.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T18:04:15.983Z"
+          },
+          {
+            "id": 8,
+            "title": "Update templates/docs and templates/rules with PM placeholders, update generators",
+            "description": "Replace hardcoded npm commands in templates/docs/onboarding.md and templates/rules/general.md with PM placeholders. Update src/generators/docs.ts and src/generators/rules.ts to pass PM template variables to fillTemplate().",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Step 1 - Update templates/docs/onboarding.md: Replace all hardcoded npm commands (lines 24-30) — `npm install` → `{{PM_INSTALL}}`, `npm run build` → `{{PM_RUN}} build`, `npm test` → `{{PM_RUN}} test`, `npm run lint` → `{{PM_RUN}} lint`, `npm run format` → `{{PM_RUN}} format`, `npm run typecheck` → `{{PM_RUN}} typecheck`, `npm run dev` → `{{PM_RUN}} dev`. Step 2 - Update templates/rules/general.md: Replace `npm` references on lines 17-20 with `{{PM_NAME}}` and `{{PM_INSTALL}}` where appropriate (e.g. 'Use `{{PM_NAME}}` for dependency management. Run `{{PM_INSTALL}}` in CI.'). Step 3 - Update src/generators/docs.ts: In the vars object passed to fillTemplate(), add: `PM_NAME: config.pm.name, PM_RUN: config.pm.run, PM_INSTALL: config.pm.install, PM_EXEC: config.pm.exec`. Step 4 - Update src/generators/rules.ts: Similarly add PM_NAME and PM_INSTALL to the vars passed to fillTemplate() when generating general.md.",
+            "status": "done",
+            "testStrategy": "Generate onboarding.md with pnpm config, verify it contains `pnpm install --frozen-lockfile` and `pnpm build`. Generate with yarn, verify `yarn install --immutable` and `yarn build`. Generate general.md with bun config, verify `bun` and `bun install --frozen-lockfile` appear.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T18:05:36.318Z"
+          },
+          {
+            "id": 9,
+            "title": "Write unit tests for detectPackageManager and PM-aware generators",
+            "description": "Create test/pm.test.ts with comprehensive unit tests for detectPackageManager(). Update or create tests in test/generators/ to verify PM substitution in hooks, claude-md, docs, and rules generators.",
+            "dependencies": [
+              2,
+              5,
+              6,
+              7,
+              8
+            ],
+            "details": "Create /workspaces/ai-dev-setup/test/pm.test.ts with: (1) Lock file tests: create temp dirs with each lock file type and verify correct PM is returned. (2) package.json packageManager field tests: verify pnpm@9.0.0 → pnpm, yarn@4.0.0 → yarn, bun@1.0.0 → bun, npm@10.0.0 → npm. (3) Priority test: when both pnpm-lock.yaml and yarn.lock exist, verify pnpm-lock.yaml takes priority. (4) Fallback test: empty directory returns npm. Update test/generators/hooks.test.ts: add tests that generate hooks with npm, pnpm, yarn, bun configs and assert PM-specific commands appear. Update test/generators/claude-md.test.ts (or create): verify quality gate uses correct PM run command. Update test/generators/docs.test.ts (or create): verify onboarding.md contains correct PM-specific commands. Run `npm test` and fix any failures.",
+            "status": "done",
+            "testStrategy": "Run `npm test` after writing all tests. All tests must pass. Aim for at least 90% branch coverage of the detectPackageManager function. Verify tests for all 4 PMs (npm, pnpm, yarn, bun) are present.",
+            "parentId": "undefined",
+            "updatedAt": "2026-02-18T18:07:37.148Z"
+          },
+          {
+            "id": 10,
+            "title": "Run full quality gate (format, lint, typecheck, build, test) and fix all issues",
+            "description": "Run the mandatory pre-completion checklist: format, lint, typecheck, build, and full test suite. Fix all errors found. Verify the complete PM detection and abstraction feature works end-to-end.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "details": "Execute in sequence: (1) `npm run format` — fix any formatting issues. (2) `npm run lint` — fix all lint errors, warnings acceptable. (3) `npm run typecheck` — fix all TypeScript errors, especially ensure `config.pm` is properly typed everywhere. (4) `npm run build` — verify clean build with zero errors. (5) `npm test` — all tests must pass. After each failing step, fix the issue and re-run. Common issues to check: (a) Any existing code that constructs a ProjectConfig object manually must be updated to include the `pm` field. (b) Check test fixtures and mock configs in test files for missing `pm` field. (c) Verify fillTemplate() in src/utils.ts handles unknown placeholders gracefully (doesn't throw if a placeholder is in the template but not in vars). Do a final grep for remaining hardcoded `npm run` strings in src/ and templates/ to catch any missed occurrences.",
+            "status": "pending",
+            "testStrategy": "All 5 quality gate steps must pass with zero errors. Run `grep -r 'npm run' src/ templates/` to verify no hardcoded npm references remain (except in comments or places explicitly documented as intentional like global tool installs in on-create.ts).",
+            "parentId": "undefined"
+          }
+        ],
+        "updatedAt": "2026-02-18T18:07:37.148Z"
       },
       {
         "id": "28",
@@ -1927,7 +2072,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-18T17:52:17.474Z",
+      "lastModified": "2026-02-18T18:07:37.151Z",
       "taskCount": 32,
       "completedCount": 26,
       "tags": [

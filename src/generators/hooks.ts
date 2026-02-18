@@ -1,39 +1,37 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { ProjectConfig, FileDescriptor } from "../types.js";
+import type { ProjectConfig, FileDescriptor, PackageManager } from "../types.js";
 
-/** Maps hook step names to their bash script snippets */
-const STEP_SNIPPETS: Record<string, { label: string; script: string }> = {
-  format: {
-    label: "Format",
-    script: "npm run format --if-present 2>/dev/null || true",
-  },
-  lint: {
-    label: "Lint (fail on errors)",
-    script:
-      'npm run lint --if-present || { echo "BLOCK: Lint errors found. Fix before committing."; exit 1; }',
-  },
-  typecheck: {
-    label: "Type-check",
-    script:
-      'npm run typecheck --if-present || { echo "BLOCK: Type errors found. Fix before committing."; exit 1; }',
-  },
-  build: {
-    label: "Build",
-    script:
-      'npm run build --if-present || { echo "BLOCK: Build failed. Fix before committing."; exit 1; }',
-  },
-  test: {
-    label: "Test",
-    script:
-      'npm test --if-present || { echo "BLOCK: Tests failing. Fix before committing."; exit 1; }',
-  },
-};
+/** Build PM-aware hook step snippets from the resolved PackageManager. */
+function buildStepSnippets(pm: PackageManager): Record<string, { label: string; script: string }> {
+  return {
+    format: {
+      label: "Format",
+      script: `${pm.runIfPresent} format 2>/dev/null || true`,
+    },
+    lint: {
+      label: "Lint (fail on errors)",
+      script: `${pm.runIfPresent} lint || { echo "BLOCK: Lint errors found. Fix before committing."; exit 1; }`,
+    },
+    typecheck: {
+      label: "Type-check",
+      script: `${pm.runIfPresent} typecheck || { echo "BLOCK: Type errors found. Fix before committing."; exit 1; }`,
+    },
+    build: {
+      label: "Build",
+      script: `${pm.runIfPresent} build || { echo "BLOCK: Build failed. Fix before committing."; exit 1; }`,
+    },
+    test: {
+      label: "Test",
+      script: `${pm.test} --if-present || { echo "BLOCK: Tests failing. Fix before committing."; exit 1; }`,
+    },
+  };
+}
 
 /**
  * Build the pre-commit.sh script dynamically from selected hook steps.
  */
-function buildPreCommitScript(selectedSteps: string[]): string {
+function buildPreCommitScript(selectedSteps: string[], pm: PackageManager): string {
   const lines = [
     "#!/usr/bin/env bash",
     "set -euo pipefail",
@@ -42,8 +40,9 @@ function buildPreCommitScript(selectedSteps: string[]): string {
     "",
   ];
 
+  const snippets = buildStepSnippets(pm);
   selectedSteps.forEach((step, idx) => {
-    const snippet = STEP_SNIPPETS[step];
+    const snippet = snippets[step];
     if (!snippet) return;
     lines.push(`# ${idx + 1}. ${snippet.label}`);
     lines.push(snippet.script);
@@ -70,10 +69,11 @@ function buildPreCommitScript(selectedSteps: string[]): string {
  * Implements F3 (Hooks generation) and F13 (Granular opt-in) from the PRD.
  */
 export async function generateHooks(config: ProjectConfig): Promise<FileDescriptor[]> {
-  const selectedSteps = config.selectedHookSteps ?? Object.keys(STEP_SNIPPETS);
+  const defaultSteps = Object.keys(buildStepSnippets(config.pm));
+  const selectedSteps = config.selectedHookSteps ?? defaultSteps;
 
   // Build pre-commit script dynamically from selected steps
-  const preCommitContent = buildPreCommitScript(selectedSteps);
+  const preCommitContent = buildPreCommitScript(selectedSteps, config.pm);
 
   // Build settings.json with hook matcher
   const settingsContent = await buildSettingsJson(config.projectRoot);

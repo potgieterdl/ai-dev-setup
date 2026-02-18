@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { generateHooks } from "../../src/generators/hooks.js";
 import { defaultConfig } from "../../src/defaults.js";
+import { PACKAGE_MANAGERS } from "../../src/pm.js";
 import type { ProjectConfig } from "../../src/types.js";
 
 function makeConfig(overrides: Partial<ProjectConfig> = {}): ProjectConfig {
@@ -83,10 +84,10 @@ describe("generateHooks", () => {
     it("demo: generates pre-commit.sh with only selected steps", async () => {
       const result = await generateHooks(makeConfig({ selectedHookSteps: ["format", "lint"] }));
       const script = result.find((f) => f.path.includes("pre-commit.sh"))?.content ?? "";
-      expect(script).toContain("npm run format");
-      expect(script).toContain("npm run lint");
-      expect(script).not.toContain("npm run typecheck");
-      expect(script).not.toContain("npm run build");
+      expect(script).toContain("npm run --if-present format");
+      expect(script).toContain("npm run --if-present lint");
+      expect(script).not.toContain("typecheck");
+      expect(script).not.toContain("build");
       expect(script).not.toContain("npm test");
     });
 
@@ -95,7 +96,7 @@ describe("generateHooks", () => {
       const script = result.find((f) => f.path.includes("pre-commit.sh"))?.content ?? "";
       expect(script).toMatch(/^#!/);
       expect(script).toContain("npm test");
-      expect(script).not.toContain("npm run format");
+      expect(script).not.toContain("format");
     });
 
     it("demo: step numbering reflects only selected steps", async () => {
@@ -156,6 +157,39 @@ describe("generateHooks", () => {
       for (const file of result) {
         expect(file.content.length).toBeGreaterThan(0);
       }
+    });
+  });
+
+  describe("package manager awareness (F15)", () => {
+    it("demo: pre-commit.sh uses pnpm commands when pm is pnpm", async () => {
+      const result = await generateHooks(makeConfig({ pm: PACKAGE_MANAGERS.pnpm }));
+      const script = result.find((f) => f.path.includes("pre-commit.sh"))?.content ?? "";
+      expect(script).toContain("pnpm run --if-present");
+      expect(script).toContain("pnpm test");
+      expect(script).not.toMatch(/(?<![a-z])npm run/);
+      expect(script).not.toMatch(/(?<![a-z])npm test/);
+    });
+
+    it("demo: pre-commit.sh uses bun commands when pm is bun", async () => {
+      const result = await generateHooks(makeConfig({ pm: PACKAGE_MANAGERS.bun }));
+      const script = result.find((f) => f.path.includes("pre-commit.sh"))?.content ?? "";
+      expect(script).toContain("bun run --if-present");
+      expect(script).toContain("bun test");
+      expect(script).not.toMatch(/(?<![a-z])npm run/);
+    });
+
+    it("demo: pre-commit.sh uses yarn commands when pm is yarn", async () => {
+      const result = await generateHooks(makeConfig({ pm: PACKAGE_MANAGERS.yarn }));
+      const script = result.find((f) => f.path.includes("pre-commit.sh"))?.content ?? "";
+      expect(script).toContain("yarn run --if-present");
+      expect(script).toContain("yarn test");
+    });
+
+    it("demo: default config (npm) generates npm commands", async () => {
+      const result = await generateHooks(makeConfig());
+      const script = result.find((f) => f.path.includes("pre-commit.sh"))?.content ?? "";
+      expect(script).toContain("npm run --if-present");
+      expect(script).toContain("npm test");
     });
   });
 });

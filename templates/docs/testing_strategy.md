@@ -56,13 +56,13 @@ Name demo tests clearly with the `demo:` prefix — they double as proof of feat
 
 Run before every commit (enforced by pre-commit hook):
 
-| Step          | Command             | Must Pass    |
-| ------------- | ------------------- | ------------ |
-| 1. Format     | `npm run format`    | Yes          |
-| 2. Lint       | `npm run lint`      | Yes (errors) |
-| 3. Type-check | `npm run typecheck` | Yes          |
-| 4. Build      | `npm run build`     | Yes          |
-| 5. Test       | `npm test`          | Yes          |
+| Step          | Command                | Must Pass    |
+| ------------- | ---------------------- | ------------ |
+| 1. Format     | `{{PM_RUN}} format`    | Yes          |
+| 2. Lint       | `{{PM_RUN}} lint`      | Yes (errors) |
+| 3. Type-check | `{{PM_RUN}} typecheck` | Yes          |
+| 4. Build      | `{{PM_RUN}} build`     | Yes          |
+| 5. Test       | `{{PM_TEST}}`          | Yes          |
 
 ## Writing Tests
 

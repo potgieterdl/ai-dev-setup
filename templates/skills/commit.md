@@ -8,11 +8,11 @@ description: Activates when discussing commits, pushing, or branching
 
 Run these steps in order — do not skip any:
 
-1. **Format:** `npm run format` (Prettier)
-2. **Lint:** `npm run lint` — fix all errors
-3. **Type-check:** `npm run typecheck` (tsc --noEmit)
-4. **Build:** `npm run build` — must succeed with zero errors
-5. **Test:** `npm test` — all tests must pass
+1. **Format:** `{{PM_RUN}} format` (Prettier)
+2. **Lint:** `{{PM_RUN}} lint` — fix all errors
+3. **Type-check:** `{{PM_RUN}} typecheck` (tsc --noEmit)
+4. **Build:** `{{PM_RUN}} build` — must succeed with zero errors
+5. **Test:** `{{PM_TEST}}` — all tests must pass
 
 The pre-commit hook enforces this automatically. If it blocks, fix the issue rather than bypassing.
 

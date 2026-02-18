@@ -5,6 +5,7 @@ import { runOnCreate, runPostCreate, runPostStart } from "./phases/index.js";
 import { runWizard } from "./wizard.js";
 import { runAudit, checkClaudeCodeAvailable, installClaudeCode } from "./audit.js";
 import { defaultConfig } from "./defaults.js";
+import { isValidPmName } from "./pm.js";
 
 const cli = meow(
   `
@@ -21,6 +22,7 @@ const cli = meow(
     --non-interactive   Skip prompts, use environment variables
     --no-audit          Skip the Claude Code audit step
     --overwrite         Overwrite existing files (default: true)
+    --pm <name>         Force package manager: npm | pnpm | yarn | bun
     --version           Show version
     --help              Show help
 
@@ -31,6 +33,7 @@ const cli = meow(
     SETUP_AI_ARCH               monolith | 2-tier | 3-tier | microservices | skip
     SETUP_AI_SKIP_AUDIT=1       Skip audit step
     SETUP_AI_AGENT_TEAMS=1      Enable agent teams
+    SETUP_AI_PM                 npm | pnpm | yarn | bun
     SETUP_AI_PRD_PATH           Path to existing PRD file
 `,
   {
@@ -39,9 +42,19 @@ const cli = meow(
       nonInteractive: { type: "boolean", default: false },
       audit: { type: "boolean", default: true },
       overwrite: { type: "boolean", default: true },
+      pm: { type: "string" },
     },
   }
 );
+
+/**
+ * If --pm flag is set, propagate it via SETUP_AI_PM so the wizard picks it up.
+ */
+function applyPmOverride(): void {
+  if (cli.flags.pm && isValidPmName(cli.flags.pm)) {
+    process.env.SETUP_AI_PM = cli.flags.pm;
+  }
+}
 
 async function main(): Promise<void> {
   const [command] = cli.input;
@@ -52,6 +65,14 @@ async function main(): Promise<void> {
     process.env.SETUP_AI_NONINTERACTIVE = "1";
   }
 
+  // Validate --pm flag if provided
+  if (cli.flags.pm !== undefined) {
+    if (!isValidPmName(cli.flags.pm)) {
+      console.error(`[ai-init] Invalid --pm value: "${cli.flags.pm}". Valid: npm, pnpm, yarn, bun`);
+      process.exit(1);
+    }
+  }
+
   switch (command) {
     case "on-create":
       await runOnCreate();
@@ -60,6 +81,7 @@ async function main(): Promise<void> {
     case "post-create": {
       // Lifecycle mode: force non-interactive, run wizard + generators
       process.env.SETUP_AI_NONINTERACTIVE = "1";
+      applyPmOverride();
       const config = await runWizard(projectRoot);
       if (!cli.flags.audit) {
         config.runAudit = false;
@@ -89,6 +111,7 @@ async function main(): Promise<void> {
         });
       }
 
+      applyPmOverride();
       const config = await runWizard(projectRoot);
 
       // Apply CLI flags

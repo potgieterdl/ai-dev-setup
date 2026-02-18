@@ -3,6 +3,7 @@ import type { ProjectConfig, TaskTracker, Architecture } from "./types.js";
 import { MCP_REGISTRY } from "./registry.js";
 import { defaultConfig } from "./defaults.js";
 import { commandExists } from "./utils.js";
+import { detectPackageManager, PACKAGE_MANAGERS, isValidPmName } from "./pm.js";
 
 /**
  * Check if the wizard is running in non-interactive mode.
@@ -34,6 +35,30 @@ async function stepClaudeBootstrap(): Promise<boolean> {
   }
   console.log("  ⚠ Claude Code not found. Audit step (Step 9) will be skipped.");
   return false;
+}
+
+/**
+ * Package Manager Detection (F15)
+ * Auto-detects the project's package manager from lock files and package.json.
+ * Override priority: --pm CLI flag > SETUP_AI_PM env var > lock file detection > npm fallback.
+ */
+async function stepPackageManager(config: ProjectConfig): Promise<void> {
+  // Check for explicit override via --pm flag or SETUP_AI_PM env var
+  const envPm = process.env.SETUP_AI_PM;
+  if (envPm && isValidPmName(envPm)) {
+    config.pm = PACKAGE_MANAGERS[envPm];
+    if (!isNonInteractive()) {
+      console.log(`  Package manager: ${config.pm.name} (from --pm flag)`);
+    }
+    return;
+  }
+
+  // Auto-detect from project root
+  const detected = await detectPackageManager(config.projectRoot);
+  config.pm = detected;
+  if (!isNonInteractive()) {
+    console.log(`  Package manager: ${detected.name} (auto-detected)`);
+  }
 }
 
 /**
@@ -376,6 +401,7 @@ function stepSummary(config: ProjectConfig): void {
   console.log("  Setup Summary");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
   console.log(`  Project:       ${config.projectName}`);
+  console.log(`  Package mgr:   ${config.pm.name}`);
   console.log(`  MCP servers:   ${config.selectedMcps.join(", ") || "none"}`);
   console.log(`  Task tracker:  ${config.taskTracker}`);
   console.log(`  Architecture:  ${config.architecture}`);
@@ -417,6 +443,9 @@ export async function runWizard(projectRoot: string): Promise<ProjectConfig> {
 
   // Step 0: Claude Code Bootstrap
   const claudeAvailable = await stepClaudeBootstrap();
+
+  // Package Manager Detection (F15) — auto-detect before wizard steps
+  await stepPackageManager(config);
 
   // Step 1: MCP Server Selection
   await stepMcpSelection(config);

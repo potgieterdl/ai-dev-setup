@@ -14,8 +14,8 @@ paths:
 
 ## Package Manager
 
-- Use `npm` for dependency management
-- Always use `npm ci` in CI environments; `npm install` locally
+- Use `{{PM_NAME}}` for dependency management
+- Always use `{{PM_INSTALL}}` in CI environments
 - Prefer `@latest` when adding new packages — never guess version numbers
 - Lock files are source of truth — do not edit manually
 

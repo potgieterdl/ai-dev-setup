@@ -336,7 +336,7 @@ describe("ai-init integration", () => {
       expect(await fileExists(tempDir, ".claude/hooks/pre-commit.sh")).toBe(true);
       const content = await readFile(tempDir, ".claude/hooks/pre-commit.sh");
       expect(content).toContain("#!/usr/bin/env bash");
-      expect(content).toContain("npm run lint");
+      expect(content).toContain("npm run --if-present lint");
       expect(content).toContain("npm test");
 
       // Check that the file is marked executable
