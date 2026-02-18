@@ -205,4 +205,64 @@ describe("generateRules", () => {
       }
     });
   });
+
+  describe("AI analysis result integration (F20)", () => {
+    it("demo: api.md uses detected paths when analysisResult is present", async () => {
+      const result = await generateRules(
+        makeConfig({
+          hasApiDocs: true,
+          analysisResult: {
+            detectedArchitecture: "3-tier",
+            apiPaths: ["src/server/routes/**", "src/controllers/**"],
+            dbPaths: ["prisma/**"],
+            testPaths: ["test/**"],
+            architectureGuidance: "Express app.",
+            recommendedRules: ["general", "api"],
+            hookSteps: ["format", "lint", "test"],
+          },
+        })
+      );
+      const apiRule = result.find((f) => f.path === ".claude/rules/api.md");
+      expect(apiRule).toBeDefined();
+      expect(apiRule!.content).toContain("src/server/routes/**");
+      expect(apiRule!.content).toContain("src/controllers/**");
+    });
+
+    it("demo: database.md uses detected paths when analysisResult is present", async () => {
+      const result = await generateRules(
+        makeConfig({
+          hasDatabase: true,
+          analysisResult: {
+            detectedArchitecture: "3-tier",
+            apiPaths: ["src/api/**"],
+            dbPaths: ["src/data/**", "drizzle/**"],
+            testPaths: ["test/**"],
+            architectureGuidance: "Express app.",
+            recommendedRules: ["general", "database"],
+            hookSteps: ["format", "lint", "test"],
+          },
+        })
+      );
+      const dbRule = result.find((f) => f.path === ".claude/rules/database.md");
+      expect(dbRule).toBeDefined();
+      expect(dbRule!.content).toContain("src/data/**");
+      expect(dbRule!.content).toContain("drizzle/**");
+    });
+
+    it("demo: api.md falls back to default paths when no analysisResult", async () => {
+      const result = await generateRules(makeConfig({ hasApiDocs: true }));
+      const apiRule = result.find((f) => f.path === ".claude/rules/api.md");
+      expect(apiRule).toBeDefined();
+      expect(apiRule!.content).toContain("src/api/**");
+      expect(apiRule!.content).toContain("src/routes/**");
+    });
+
+    it("demo: database.md falls back to default paths when no analysisResult", async () => {
+      const result = await generateRules(makeConfig({ hasDatabase: true }));
+      const dbRule = result.find((f) => f.path === ".claude/rules/database.md");
+      expect(dbRule).toBeDefined();
+      expect(dbRule!.content).toContain("src/db/**");
+      expect(dbRule!.content).toContain("src/models/**");
+    });
+  });
 });

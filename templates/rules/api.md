@@ -1,8 +1,7 @@
 ---
 description: RESTful API conventions and input validation
 paths:
-  - "src/api/**"
-  - "src/routes/**"
+  - "{{API_PATHS}}"
 ---
 
 # API Rules

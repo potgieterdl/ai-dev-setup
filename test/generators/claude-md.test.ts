@@ -197,4 +197,29 @@ describe("generateClaudeMd", () => {
       expect(result[0].content).toMatch(/^# Project Instructions for Claude Code/);
     });
   });
+
+  describe("AI analysis architecture guidance (F20)", () => {
+    it("demo: includes Architecture Notes section when analysisResult has guidance", () => {
+      const result = generateClaudeMd(
+        makeConfig({
+          analysisResult: {
+            detectedArchitecture: "3-tier",
+            apiPaths: ["src/routes/**"],
+            dbPaths: ["prisma/**"],
+            testPaths: ["test/**"],
+            architectureGuidance: "Express API with Prisma ORM and React frontend.",
+            recommendedRules: ["general", "api", "database"],
+            hookSteps: ["format", "lint", "typecheck"],
+          },
+        })
+      );
+      expect(result[0].content).toContain("## Architecture Notes");
+      expect(result[0].content).toContain("Express API with Prisma ORM and React frontend.");
+    });
+
+    it("demo: does NOT include Architecture Notes when no analysisResult", () => {
+      const result = generateClaudeMd(makeConfig());
+      expect(result[0].content).not.toContain("## Architecture Notes");
+    });
+  });
 });

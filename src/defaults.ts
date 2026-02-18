@@ -25,6 +25,8 @@ export function defaultConfig(projectRoot: string): ProjectConfig {
     pm: PACKAGE_MANAGERS.npm,
     hasApiDocs: false,
     hasDatabase: false,
+    isExistingProject: false,
+    claudeAuthenticated: false,
     projectName: path.basename(projectRoot),
     projectRoot,
     generatedFiles: [],

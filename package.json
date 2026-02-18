@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@inquirer/prompts": "latest",
-    "meow": "latest"
+    "meow": "latest",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "latest",

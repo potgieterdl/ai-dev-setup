@@ -38,6 +38,14 @@ const ALWAYS_RULES = [
  * Implements F3 (Rules generation) from the PRD.
  */
 export async function generateRules(config: ProjectConfig): Promise<FileDescriptor[]> {
+  // Use AI-detected paths or fall back to hardcoded defaults (F20)
+  const apiPaths = config.analysisResult?.apiPaths ?? ["src/api/**", "src/routes/**"];
+  const dbPaths = config.analysisResult?.dbPaths ?? [
+    "src/db/**",
+    "src/models/**",
+    "**/migrations/**",
+  ];
+
   const vars: Record<string, string> = {
     PROJECT_NAME: config.projectName,
     TASK_TRACKER: config.taskTracker,
@@ -49,6 +57,8 @@ export async function generateRules(config: ProjectConfig): Promise<FileDescript
     PM_TEST: config.pm.test,
     PM_RUN_IF_PRESENT: config.pm.runIfPresent,
     PM_INSTALL_GLOBAL: config.pm.installGlobal,
+    API_PATHS: apiPaths.map((p) => `"${p}"`).join("\n  - "),
+    DB_PATHS: dbPaths.map((p) => `"${p}"`).join("\n  - "),
   };
 
   const selected = new Set(config.selectedRules);

@@ -225,10 +225,9 @@ describe("rules templates", () => {
       expect(content).toContain("@docs/api.md");
     });
 
-    it("has paths scoped to api and routes", async () => {
+    it("has API_PATHS placeholder for dynamic path scoping (F20)", async () => {
       const content = await fs.readFile(path.join(RULES_DIR, "api.md"), "utf8");
-      expect(content).toContain("src/api/**");
-      expect(content).toContain("src/routes/**");
+      expect(content).toContain("{{API_PATHS}}");
     });
   });
 });

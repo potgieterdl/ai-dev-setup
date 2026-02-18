@@ -4,22 +4,21 @@ import { run, commandExists } from "../utils.js";
  * On-create phase — heavy installs, called once during Codespace creation.
  *
  * This phase runs as the `onCreateCommand` in devcontainer.json.
- * It installs global npm packages (Claude Code, Task Master) that are
+ * It installs global tools (Claude Code, Task Master) that are
  * required for the AI-assisted development workflow.
  *
- * ADR: Global tool installs always use `npm install -g` regardless of the
- * project's package manager. These are system-level dev tools, not project
- * dependencies — npm is the universal baseline available in all Node environments.
+ * ADR: Claude Code uses the native installer (curl). Task Master uses
+ * `npm install -g`. These are system-level dev tools, not project dependencies.
  *
  * Idempotent: skips installation if the tool is already on PATH.
  */
 export async function runOnCreate(): Promise<void> {
   console.log("[ai-init] Phase: on-create — installing global tools...");
 
-  // Install Claude Code if not present
+  // Install Claude Code via native installer if not present (F20)
   if (!(await commandExists("claude"))) {
-    console.log("[ai-init] Installing Claude Code...");
-    await run("npm", ["install", "-g", "@anthropic-ai/claude-code"]);
+    console.log("[ai-init] Installing Claude Code via native installer...");
+    await run("bash", ["-c", "curl -fsSL https://claude.ai/install.sh | bash"]);
     console.log("[ai-init] Claude Code installed.");
   } else {
     console.log("[ai-init] Claude Code already installed, skipping.");

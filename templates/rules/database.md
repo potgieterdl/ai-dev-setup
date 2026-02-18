@@ -1,9 +1,7 @@
 ---
 description: Database access patterns and migration discipline
 paths:
-  - "src/db/**"
-  - "src/models/**"
-  - "**/migrations/**"
+  - "{{DB_PATHS}}"
 ---
 
 # Database Rules

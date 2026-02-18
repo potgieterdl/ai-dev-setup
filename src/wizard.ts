@@ -2,8 +2,10 @@ import { select, checkbox, confirm, input } from "@inquirer/prompts";
 import type { ProjectConfig, TaskTracker, Architecture } from "./types.js";
 import { MCP_REGISTRY } from "./registry.js";
 import { defaultConfig } from "./defaults.js";
-import { commandExists } from "./utils.js";
+import { commandExists, run } from "./utils.js";
 import { detectPackageManager, PACKAGE_MANAGERS, isValidPmName } from "./pm.js";
+import { checkClaudeAuthenticated } from "./audit.js";
+import { analyzeProject } from "./analyze.js";
 
 /**
  * Check if the wizard is running in non-interactive mode.
@@ -35,6 +37,128 @@ async function stepClaudeBootstrap(): Promise<boolean> {
   }
   console.log("  ⚠ Claude Code not found. Audit step (Step 9) will be skipped.");
   return false;
+}
+
+/**
+ * Step 0.5: Authentication Gate (F20)
+ * Checks if Claude Code is authenticated. If not, offers auth options.
+ * Returns true if authenticated after this step, false if skipped.
+ */
+async function stepAuthGate(config: ProjectConfig, claudeAvailable: boolean): Promise<boolean> {
+  if (!claudeAvailable) {
+    config.claudeAuthenticated = false;
+    return false;
+  }
+
+  if (isNonInteractive()) {
+    // In non-interactive mode, just check — don't prompt
+    config.claudeAuthenticated = await checkClaudeAuthenticated();
+    return config.claudeAuthenticated;
+  }
+
+  const isAuthenticated = await checkClaudeAuthenticated();
+  if (isAuthenticated) {
+    console.log("  ✓ Claude Code is authenticated.");
+    config.claudeAuthenticated = true;
+    return true;
+  }
+
+  console.log("  ⚠ Claude Code is not authenticated.");
+  const authChoice = (await select({
+    message: "  Choose an authentication option:",
+    choices: [
+      { name: "Enter API key (best for Codespaces/CI)", value: "apikey" },
+      { name: "Run claude auth login (browser OAuth)", value: "login" },
+      { name: "Skip AI features (use defaults)", value: "skip" },
+    ],
+  })) as string;
+
+  if (authChoice === "apikey") {
+    const apiKey = await input({ message: "  Enter ANTHROPIC_API_KEY:" });
+    process.env["ANTHROPIC_API_KEY"] = apiKey;
+    config.claudeAuthenticated = true;
+    return true;
+  } else if (authChoice === "login") {
+    try {
+      await run("claude", ["auth", "login"]);
+      config.claudeAuthenticated = await checkClaudeAuthenticated();
+    } catch {
+      console.log("  ⚠ Auth login failed. AI features will be skipped.");
+      config.claudeAuthenticated = false;
+    }
+    return config.claudeAuthenticated;
+  }
+
+  // 'skip' — falls through
+  config.claudeAuthenticated = false;
+  return false;
+}
+
+/**
+ * New vs Existing Project prompt (F20)
+ * Asks whether this is a new or existing project.
+ * For existing projects, triggers codebase scanning.
+ */
+async function stepNewVsExisting(config: ProjectConfig): Promise<void> {
+  if (isNonInteractive()) {
+    config.isExistingProject = process.env.SETUP_AI_EXISTING_PROJECT === "1";
+    return;
+  }
+
+  config.isExistingProject = await confirm({
+    message: "Is this an existing project? (scan codebase to auto-detect structure)",
+    default: false,
+  });
+}
+
+/**
+ * AI Analysis step (F20)
+ * For existing projects with authenticated Claude, runs the four-step analysis:
+ * detect → synthesize with Haiku → validate → confirm with user.
+ * If analysis succeeds and user accepts, populates config with detected values.
+ */
+async function stepAiAnalysis(config: ProjectConfig): Promise<void> {
+  if (!config.isExistingProject || !config.claudeAuthenticated) return;
+
+  if (isNonInteractive()) {
+    // Skip AI analysis in non-interactive mode
+    return;
+  }
+
+  console.log("\n  Scanning project structure...");
+  const analysis = await analyzeProject(config.projectRoot);
+
+  if (!analysis) {
+    console.log("  ⚠ AI analysis unavailable. Continuing with manual configuration.");
+    return;
+  }
+
+  // Show preview
+  console.log("\n  AI detected your project structure:");
+  console.log(`    Architecture:  ${analysis.detectedArchitecture}`);
+  console.log(`    API paths:     ${analysis.apiPaths.join(", ") || "none"}`);
+  console.log(`    DB paths:      ${analysis.dbPaths.join(", ") || "none"}`);
+  console.log(`    Test paths:    ${analysis.testPaths.join(", ") || "none"}`);
+  console.log(`    Rules:         ${analysis.recommendedRules.join(", ")}`);
+  console.log(`    Hook steps:    ${analysis.hookSteps.join(", ")}`);
+  console.log(`    Guidance:      "${analysis.architectureGuidance}"`);
+
+  const accept = (await select({
+    message: "Accept this configuration?",
+    choices: [
+      { name: "Yes — use AI-detected config", value: "yes" },
+      { name: "No — use manual wizard steps", value: "no" },
+    ],
+  })) as string;
+
+  if (accept === "yes") {
+    config.analysisResult = analysis;
+    config.architecture = analysis.detectedArchitecture;
+    config.hasApiDocs = analysis.apiPaths.length > 0;
+    config.hasDatabase = analysis.dbPaths.length > 0;
+    config.selectedRules = analysis.recommendedRules;
+    config.selectedHookSteps = analysis.hookSteps;
+  }
 }
 
 /**
@@ -401,7 +525,10 @@ function stepSummary(config: ProjectConfig): void {
   console.log("  Setup Summary");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
   console.log(`  Project:       ${config.projectName}`);
+  console.log(`  Project type:  ${config.isExistingProject ? "existing" : "new"}`);
   console.log(`  Package mgr:   ${config.pm.name}`);
+  console.log(`  Claude auth:   ${config.claudeAuthenticated ? "yes" : "no"}`);
+  console.log(`  AI analysis:   ${config.analysisResult ? "applied" : "not used"}`);
   console.log(`  MCP servers:   ${config.selectedMcps.join(", ") || "none"}`);
   console.log(`  Task tracker:  ${config.taskTracker}`);
   console.log(`  Architecture:  ${config.architecture}`);
@@ -444,8 +571,14 @@ export async function runWizard(projectRoot: string): Promise<ProjectConfig> {
   // Step 0: Claude Code Bootstrap
   const claudeAvailable = await stepClaudeBootstrap();
 
+  // Step 0.5: Authentication Gate (F20)
+  await stepAuthGate(config, claudeAvailable);
+
   // Package Manager Detection (F15) — auto-detect before wizard steps
   await stepPackageManager(config);
+
+  // New vs Existing Project (F20)
+  await stepNewVsExisting(config);
 
   // Step 1: MCP Server Selection
   await stepMcpSelection(config);
@@ -456,14 +589,26 @@ export async function runWizard(projectRoot: string): Promise<ProjectConfig> {
   // Step 3: PRD
   await stepPrd(config);
 
-  // Step 4: Architecture
-  await stepArchitecture(config);
+  // Step 4: Architecture (skipped if AI analysis already set it)
+  if (!config.analysisResult) {
+    await stepArchitecture(config);
+  }
 
-  // Step 5: API Surface
-  await stepApiDocs(config);
+  // AI Analysis for existing projects (F20)
+  // Runs after architecture step position but only for existing+authenticated
+  if (config.isExistingProject && config.claudeAuthenticated && !config.analysisResult) {
+    await stepAiAnalysis(config);
+  }
 
-  // Step 6: Database
-  await stepDatabase(config);
+  // Step 5: API Surface (skipped if AI analysis already set it)
+  if (!config.analysisResult) {
+    await stepApiDocs(config);
+  }
+
+  // Step 6: Database (skipped if AI analysis already set it)
+  if (!config.analysisResult) {
+    await stepDatabase(config);
+  }
 
   // Step 6b: Rules Picker (F13)
   await stepRulesPicker(config);

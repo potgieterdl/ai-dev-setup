@@ -5,6 +5,7 @@ import os from "node:os";
 import {
   checkClaudeCodeAvailable,
   installClaudeCode,
+  checkClaudeAuthenticated,
   buildAuditPrompt,
   runAudit,
 } from "../../src/audit.js";
@@ -43,10 +44,34 @@ describe("installClaudeCode", () => {
     vi.restoreAllMocks();
   });
 
-  it("calls npm install -g @anthropic-ai/claude-code", async () => {
+  it("calls native curl installer instead of npm", async () => {
     const runSpy = vi.spyOn(utils, "run").mockResolvedValue("");
     await installClaudeCode();
-    expect(runSpy).toHaveBeenCalledWith("npm", ["install", "-g", "@anthropic-ai/claude-code"]);
+    expect(runSpy).toHaveBeenCalledWith("bash", [
+      "-c",
+      "curl -fsSL https://claude.ai/install.sh | bash",
+    ]);
+  });
+});
+
+describe("checkClaudeAuthenticated", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns true when claude auth status includes "Login method"', async () => {
+    vi.spyOn(utils, "run").mockResolvedValue("Login method: OAuth\nUser: test@example.com");
+    expect(await checkClaudeAuthenticated()).toBe(true);
+  });
+
+  it("returns false when claude auth status throws", async () => {
+    vi.spyOn(utils, "run").mockRejectedValue(new Error("not authenticated"));
+    expect(await checkClaudeAuthenticated()).toBe(false);
+  });
+
+  it('returns false when output does not include "Login method"', async () => {
+    vi.spyOn(utils, "run").mockResolvedValue("Error: not logged in");
+    expect(await checkClaudeAuthenticated()).toBe(false);
   });
 });
 

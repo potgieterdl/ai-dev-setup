@@ -25,6 +25,60 @@ export interface PackageManager {
   test: string;
 }
 
+/** Raw filesystem signals gathered by src/detect.ts (F20) */
+export interface DetectionResult {
+  hasPackageJson: boolean;
+  hasTsConfig: boolean;
+  hasDockerCompose: boolean;
+  hasPrismaSchema: boolean;
+  hasGraphqlConfig: boolean;
+  /** Top-level directories under src/ (or project root if no src/) */
+  directories: string[];
+  /** Detected config files present in the project */
+  configFiles: string[];
+  /** Detected frameworks from package.json, e.g. ["express", "next"] */
+  frameworks: string[];
+  /** Detected ORMs from package.json, e.g. ["prisma", "drizzle"] */
+  orms: string[];
+  /** Detected test frameworks from package.json, e.g. ["vitest", "jest"] */
+  testFrameworks: string[];
+}
+
+/** Known rule slugs that the analysis step can recommend */
+export const KNOWN_RULES = [
+  "general",
+  "api",
+  "database",
+  "testing",
+  "security",
+  "git",
+  "config",
+  "docs",
+  "agent-teams",
+] as const;
+export type KnownRule = (typeof KNOWN_RULES)[number];
+
+/** Known hook step names that the analysis step can recommend */
+export const KNOWN_HOOK_STEPS = ["format", "lint", "typecheck", "build", "test"] as const;
+export type KnownHookStep = (typeof KNOWN_HOOK_STEPS)[number];
+
+/** Structured output from claude --model haiku analysis, validated by Zod (F20) */
+export interface ProjectAnalysis {
+  detectedArchitecture: "monolith" | "2-tier" | "3-tier" | "microservices";
+  /** Glob patterns for API-related paths, e.g. ["src/routes/**", "src/api/**"] */
+  apiPaths: string[];
+  /** Glob patterns for database-related paths, e.g. ["prisma/**", "src/db/**"] */
+  dbPaths: string[];
+  /** Glob patterns for test-related paths, e.g. ["src/__tests__/**", "test/**"] */
+  testPaths: string[];
+  /** 2-3 sentence architecture guidance for CLAUDE.md */
+  architectureGuidance: string;
+  /** Subset of KNOWN_RULES to generate */
+  recommendedRules: string[];
+  /** Subset of KNOWN_HOOK_STEPS to include in pre-commit */
+  hookSteps: string[];
+}
+
 /** Supported task tracker integrations */
 export type TaskTracker = "taskmaster" | "beads" | "markdown";
 
@@ -94,6 +148,14 @@ export interface ProjectConfig {
   // Project metadata
   projectName: string;
   projectRoot: string;
+
+  // AI-powered project analysis (F20)
+  /** Whether this is an existing project (triggers codebase scanning) */
+  isExistingProject: boolean;
+  /** Whether Claude Code is authenticated for AI features */
+  claudeAuthenticated: boolean;
+  /** Result of AI-powered project analysis (populated when haiku analysis succeeds) */
+  analysisResult?: ProjectAnalysis;
 
   // Tracking for audit (F11)
   generatedFiles: string[];

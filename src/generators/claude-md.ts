@@ -129,6 +129,11 @@ export function generateClaudeMd(config: ProjectConfig): FileDescriptor[] {
 
   sections.push(buildTaskTrackerInstructions(config), "");
 
+  // Architecture guidance from AI analysis (F20)
+  if (config.analysisResult?.architectureGuidance) {
+    sections.push(`## Architecture Notes\n\n${config.analysisResult.architectureGuidance}`, "");
+  }
+
   const mcpSection = buildMcpSection(config);
   if (mcpSection) {
     sections.push(mcpSection, "");

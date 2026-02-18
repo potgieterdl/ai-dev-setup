@@ -67,13 +67,29 @@ export async function checkClaudeCodeAvailable(): Promise<boolean> {
 }
 
 /**
- * Install Claude Code globally via npm.
+ * Install Claude Code via the native installer.
+ * The npm package @anthropic-ai/claude-code is deprecated — the native
+ * installer downloads a standalone binary with auto-updates.
  * Called during Step 0 (bootstrap) if Claude is not found on PATH.
  */
 export async function installClaudeCode(): Promise<void> {
-  console.log("[ai-init] Installing Claude Code...");
-  await run("npm", ["install", "-g", "@anthropic-ai/claude-code"]);
+  console.log("[ai-init] Installing Claude Code via native installer...");
+  await run("bash", ["-c", "curl -fsSL https://claude.ai/install.sh | bash"]);
   console.log("[ai-init] Claude Code installed.");
+}
+
+/**
+ * Check if Claude Code is authenticated.
+ * Runs `claude auth status --text` and checks for "Login method" in output.
+ * Returns true if authenticated, false otherwise.
+ */
+export async function checkClaudeAuthenticated(): Promise<boolean> {
+  try {
+    const output = await run("claude", ["auth", "status", "--text"]);
+    return output.includes("Login method");
+  } catch {
+    return false;
+  }
 }
 
 /**
