@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { appendFileSync, mkdirSync } from "node:fs";
 import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 import { execFile } from "node:child_process";
@@ -6,6 +7,36 @@ import { promisify } from "node:util";
 import type { FileDescriptor, SavedConfig } from "./types.js";
 
 const execFileAsync = promisify(execFile);
+
+/* ──────────────────────────────────────────────────────────
+ * Debug log file — writes to <projectRoot>/ai-init.log
+ * ────────────────────────────────────────────────────────── */
+
+let logFilePath: string | null = null;
+
+/** Initialise the log file path. Call once with the project root. */
+export function initLogFile(projectRoot: string): void {
+  logFilePath = path.join(projectRoot, "ai-init.log");
+  try {
+    mkdirSync(path.dirname(logFilePath), { recursive: true });
+    appendFileSync(
+      logFilePath,
+      `\n${"=".repeat(72)}\n[${new Date().toISOString()}] ai-init session started\n${"=".repeat(72)}\n`
+    );
+  } catch {
+    logFilePath = null; // can't write — disable silently
+  }
+}
+
+/** Append a message to the log file (no-op if not initialised). */
+export function logToFile(message: string): void {
+  if (!logFilePath) return;
+  try {
+    appendFileSync(logFilePath, `[${new Date().toISOString()}] ${message}\n`);
+  } catch {
+    /* best-effort */
+  }
+}
 
 /**
  * Write all file descriptors to disk. Creates parent directories as needed.

@@ -8,7 +8,7 @@ import { runDoctor, printDoctorReport } from "./doctor.js";
 import { runAudit, checkClaudeCodeAvailable, installClaudeCode } from "./audit.js";
 import { defaultConfig } from "./defaults.js";
 import { isValidPmName } from "./pm.js";
-import { writeSavedConfig } from "./utils.js";
+import { writeSavedConfig, initLogFile } from "./utils.js";
 import {
   loadPreset,
   savePreset,
@@ -123,6 +123,9 @@ function applyPmOverride(): void {
 async function main(): Promise<void> {
   const [command] = cli.input;
   const projectRoot = process.cwd();
+
+  // Initialise debug log file at <projectRoot>/ai-init.log
+  initLogFile(projectRoot);
 
   // --non-interactive flag sets the env var so wizard reads it
   if (cli.flags.nonInteractive || process.env.SETUP_AI_NONINTERACTIVE === "1") {
