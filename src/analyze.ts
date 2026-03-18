@@ -66,6 +66,9 @@ Analyze the codebase and return structured configuration for AI-assisted develop
  * Call Claude Haiku in headless mode with JSON schema constraint.
  * Returns the raw parsed JSON response.
  */
+/** Timeout for each Claude Haiku call (30 seconds). */
+const HAIKU_TIMEOUT_MS = 30_000;
+
 async function callHaiku(detection: DetectionResult, projectRoot: string): Promise<unknown> {
   const prompt = buildAnalysisPrompt(detection);
   const output = await run(
@@ -84,7 +87,8 @@ async function callHaiku(detection: DetectionResult, projectRoot: string): Promi
       "--allowedTools",
       "Read",
     ],
-    projectRoot
+    projectRoot,
+    HAIKU_TIMEOUT_MS
   );
   return JSON.parse(output);
 }
@@ -147,7 +151,8 @@ Return valid JSON only.`;
         "--allowedTools",
         "Read",
       ],
-      projectRoot
+      projectRoot,
+      HAIKU_TIMEOUT_MS
     );
 
     const retryResult = AnalysisSchema.safeParse(JSON.parse(retryRaw));

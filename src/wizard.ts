@@ -66,11 +66,15 @@ async function stepAuthGate(config: ProjectConfig, claudeAvailable: boolean): Pr
   }
 
   console.log("  ⚠ Claude Code is not authenticated.");
+  const isCodespaces = !!process.env.CODESPACES;
   const authChoice = (await select({
     message: "  Choose an authentication option:",
     choices: [
-      { name: "Enter API key (best for Codespaces/CI)", value: "apikey" },
-      { name: "Run claude auth login (browser OAuth)", value: "login" },
+      { name: "Enter API key (recommended for Codespaces/CI)", value: "apikey" },
+      {
+        name: `Run claude auth login (browser OAuth)${isCodespaces ? " — may not work in Codespaces" : ""}`,
+        value: "login",
+      },
       { name: "Skip AI features (use defaults)", value: "skip" },
     ],
   })) as string;
@@ -82,10 +86,11 @@ async function stepAuthGate(config: ProjectConfig, claudeAvailable: boolean): Pr
     return true;
   } else if (authChoice === "login") {
     try {
-      await run("claude", ["auth", "login"]);
+      console.log("  Starting OAuth login... (timeout: 120s, Ctrl+C to cancel)");
+      await run("claude", ["auth", "login"], undefined, 120_000);
       config.claudeAuthenticated = await checkClaudeAuthenticated();
     } catch {
-      console.log("  ⚠ Auth login failed. AI features will be skipped.");
+      console.log("  ⚠ Auth login failed or timed out. AI features will be skipped.");
       config.claudeAuthenticated = false;
     }
     return config.claudeAuthenticated;
@@ -127,11 +132,11 @@ async function stepAiAnalysis(config: ProjectConfig): Promise<void> {
     return;
   }
 
-  console.log("\n  Scanning project structure...");
+  console.log("\n  Scanning project structure... (timeout: 30s, Ctrl+C to skip)");
   const analysis = await analyzeProject(config.projectRoot);
 
   if (!analysis) {
-    console.log("  ⚠ AI analysis unavailable. Continuing with manual configuration.");
+    console.log("  ⚠ AI analysis unavailable — skipped or timed out. Continuing with manual configuration.");
     return;
   }
 

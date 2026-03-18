@@ -40,9 +40,15 @@ export async function writeFiles(
 
 /**
  * Run a shell command and return stdout. Throws on non-zero exit.
+ * Optional timeoutMs kills the subprocess after the given duration.
  */
-export async function run(cmd: string, args: string[], cwd?: string): Promise<string> {
-  const { stdout } = await execFileAsync(cmd, args, { cwd });
+export async function run(
+  cmd: string,
+  args: string[],
+  cwd?: string,
+  timeoutMs?: number
+): Promise<string> {
+  const { stdout } = await execFileAsync(cmd, args, { cwd, timeout: timeoutMs });
   return stdout.trim();
 }
 

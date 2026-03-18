@@ -215,8 +215,12 @@ describe("bash-to-typescript parity", () => {
   });
 
   // ── Devcontainer Parity ───────────────────────────────────────────────
+  // NOTE: Devcontainer generation is disabled to prevent container rebuild loops.
+  // The generateDevcontainer() function still works (tested in unit tests) but
+  // post-create no longer calls it. These parity tests are skipped until
+  // smart-diff support is added to avoid unnecessary devcontainer.json changes.
 
-  describe("devcontainer parity", () => {
+  describe.skip("devcontainer parity (disabled — generation commented out)", () => {
     it("parity: devcontainer uses ai-init lifecycle commands", async () => {
       await runCli([], tempDir);
 
@@ -311,7 +315,7 @@ describe("bash-to-typescript parity", () => {
         ".vscode/mcp.json",
         "CLAUDE.md",
         "CLAUDE_MCP.md",
-        ".devcontainer/devcontainer.json",
+        // ".devcontainer/devcontainer.json", // disabled — see devcontainer parity note
       ];
 
       for (const file of coreFiles) {

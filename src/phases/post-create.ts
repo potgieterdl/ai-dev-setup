@@ -6,7 +6,7 @@ import { generateDocs } from "../generators/docs.js";
 import { generateRules } from "../generators/rules.js";
 import { generateSkills } from "../generators/skills.js";
 import { generateHooks } from "../generators/hooks.js";
-import { generateDevcontainer } from "../generators/devcontainer.js";
+// import { generateDevcontainer } from "../generators/devcontainer.js";
 import { generateCommands } from "../generators/commands.js";
 import { configureAgentTeams } from "../generators/agent-teams.js";
 import type { FileDescriptor } from "../types.js";
@@ -33,7 +33,10 @@ export async function runPostCreate(config: ProjectConfig, overwrite = true): Pr
   // Always-generated files
   allFiles.push(...generateMcpJson(config));
   allFiles.push(...generateClaudeMd(config));
-  allFiles.push(...generateDevcontainer(config));
+  // NOTE: Devcontainer generation disabled — regenerating devcontainer.json
+  // triggers a VS Code "Rebuild Container" prompt which breaks the running container.
+  // Uncomment when we add smart diffing to avoid unnecessary changes.
+  // allFiles.push(...generateDevcontainer(config));
 
   // Conditionally-generated files
   if (config.generateDocs) {

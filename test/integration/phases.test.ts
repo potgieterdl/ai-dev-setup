@@ -40,7 +40,8 @@ describe("runPostCreate", () => {
     expect(written).toContain(".mcp.json");
     expect(written).toContain(".vscode/mcp.json");
     expect(written).toContain("CLAUDE.md");
-    expect(written).toContain(".devcontainer/devcontainer.json");
+    // Devcontainer generation is disabled to avoid triggering container rebuilds
+    expect(written).not.toContain(".devcontainer/devcontainer.json");
   });
 
   it("all returned file paths exist on disk", async () => {
@@ -127,7 +128,8 @@ describe("runPostCreate", () => {
     // Should still contain always-generated files
     expect(written).toContain(".mcp.json");
     expect(written).toContain("CLAUDE.md");
-    expect(written).toContain(".devcontainer/devcontainer.json");
+    // Devcontainer generation is disabled to avoid triggering container rebuilds
+    expect(written).not.toContain(".devcontainer/devcontainer.json");
   });
 });
 

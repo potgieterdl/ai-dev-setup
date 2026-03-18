@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MAX_LOOPS=2
+MAX_LOOPS=9
 COUNTER_FILE="agent_logs/.loop_counter"
 
 # Restore persisted counter or start at 0
@@ -34,11 +34,5 @@ if [ "$LOOP" -ge "$MAX_LOOPS" ]; then
 
     claude --dangerously-skip-permissions -p "$(cat AGENT_PROMPT_AUDIT.md)" &> "$LOGFILE"
     echo "=== Completed AUDIT 1 ==="
-
-    COMMIT=$(git rev-parse --short=6 HEAD)
-    LOGFILE="agent_logs/agent_AUDIT2_${COMMIT}.log"
-
-    claude --dangerously-skip-permissions -p "$(cat AGENT_PROMPT_AUDIT.md)" &> "$LOGFILE"
-    echo "=== Completed AUDIT 2 ==="
 
 fi

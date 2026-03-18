@@ -132,7 +132,8 @@ describe("analyzeProject", () => {
     expect(runSpy).toHaveBeenCalledWith(
       "claude",
       expect.arrayContaining(["--model", "haiku", "--output-format", "json", "--max-turns", "1"]),
-      tmpDir
+      tmpDir,
+      expect.any(Number)
     );
   });
 });

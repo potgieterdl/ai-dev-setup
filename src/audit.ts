@@ -59,7 +59,7 @@ export async function checkClaudeCodeAvailable(): Promise<boolean> {
     return false;
   }
   try {
-    await run("claude", ["--version"]);
+    await run("claude", ["--version"], undefined, 10_000);
     return true;
   } catch {
     return false;
@@ -85,7 +85,7 @@ export async function installClaudeCode(): Promise<void> {
  */
 export async function checkClaudeAuthenticated(): Promise<boolean> {
   try {
-    const output = await run("claude", ["auth", "status", "--text"]);
+    const output = await run("claude", ["auth", "status", "--text"], undefined, 10_000);
     return output.includes("Login method");
   } catch {
     return false;
@@ -131,11 +131,12 @@ export async function runAudit(
 
   console.log("[ai-init] Running AI-powered audit of generated files...");
 
+  const AUDIT_TIMEOUT_MS = 60_000; // 60 seconds
   let auditOutput: string;
   try {
-    auditOutput = await run("claude", ["--print", prompt], config.projectRoot);
+    auditOutput = await run("claude", ["--print", prompt], config.projectRoot, AUDIT_TIMEOUT_MS);
   } catch (err) {
-    console.warn("[ai-init] Audit failed — review generated files manually.");
+    console.warn("[ai-init] Audit failed or timed out — review generated files manually.");
     console.warn(err);
     return undefined;
   }

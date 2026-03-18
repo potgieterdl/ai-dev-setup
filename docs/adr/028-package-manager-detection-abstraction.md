@@ -19,6 +19,7 @@ A `PackageManager` interface was added to `src/types.ts` with fields: `name`, `i
 ### 2. Detection Strategy (src/pm.ts)
 
 Detection follows a strict priority order:
+
 1. **Lock file** — presence of `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, or `bun.lockb`
 2. **`packageManager` field** in `package.json` — parsed to extract the PM name
 3. **Fallback** — defaults to npm if no signal is found

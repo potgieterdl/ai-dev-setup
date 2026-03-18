@@ -72,7 +72,8 @@ describe("ai-init integration", () => {
       }
     });
 
-    it("smoke: generates devcontainer config", async () => {
+    // Devcontainer generation is disabled to prevent container rebuild loops
+    it.skip("smoke: generates devcontainer config (disabled — generation commented out)", async () => {
       await runCli([], tempDir);
 
       expect(await fileExists(tempDir, ".devcontainer/devcontainer.json")).toBe(true);

@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit)",
+        "hook": ".claude/hooks/pre-commit.sh"
+      }
+    ]
+  }
+}

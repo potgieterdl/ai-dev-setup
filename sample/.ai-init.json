@@ -1,0 +1,31 @@
+{
+  "version": "0.1.0",
+  "selectedMcps": [],
+  "taskTracker": "markdown",
+  "architecture": "3-tier",
+  "selectedRules": [
+    "general",
+    "docs",
+    "testing",
+    "git",
+    "security",
+    "config",
+    "api",
+    "database"
+  ],
+  "selectedHookSteps": [
+    "format",
+    "lint",
+    "typecheck",
+    "build",
+    "test"
+  ],
+  "selectedSkills": [
+    "testing",
+    "commit",
+    "task-workflow"
+  ],
+  "pm": "npm",
+  "agentTeamsEnabled": true,
+  "generatedAt": "2026-02-19T10:16:53.337Z"
+}
