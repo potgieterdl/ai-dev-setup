@@ -79,10 +79,9 @@ describe("isValidJson", () => {
 // ─── getRequiredEnvVars tests ──────────────────────────────────────────────
 
 describe("getRequiredEnvVars", () => {
-  it("returns env var names for taskmaster", () => {
+  it("returns empty array for taskmaster (no API key placeholders in env)", () => {
     const vars = getRequiredEnvVars("taskmaster");
-    expect(vars).toContain("ANTHROPIC_API_KEY");
-    expect(vars).toContain("PERPLEXITY_API_KEY");
+    expect(vars).toEqual([]);
   });
 
   it("returns empty array for servers with no env vars", () => {
@@ -129,22 +128,17 @@ describe("checkMcpConfig", () => {
     expect(warns.some((r) => r.message.includes(".vscode/mcp.json not found"))).toBe(true);
   });
 
-  it("warns on missing API key for configured server", async () => {
-    const savedKey = process.env.ANTHROPIC_API_KEY;
-    delete process.env.ANTHROPIC_API_KEY;
-    try {
-      await fs.writeFile(
-        path.join(tmpDir, ".mcp.json"),
-        JSON.stringify({ mcpServers: { "taskmaster-ai": {} } }),
-        "utf8"
-      );
+  it("does not warn about API keys for taskmaster (env vars handled by Claude Code)", async () => {
+    await fs.writeFile(
+      path.join(tmpDir, ".mcp.json"),
+      JSON.stringify({ mcpServers: { "taskmaster-ai": {} } }),
+      "utf8"
+    );
 
-      const result = await checkMcpConfig(tmpDir);
-      const warns = result.results.filter((r) => r.status === "warn");
-      expect(warns.some((r) => r.message.includes("ANTHROPIC_API_KEY not set"))).toBe(true);
-    } finally {
-      if (savedKey) process.env.ANTHROPIC_API_KEY = savedKey;
-    }
+    const result = await checkMcpConfig(tmpDir);
+    const warns = result.results.filter((r) => r.status === "warn");
+    // taskmaster no longer has API key placeholders — only TASK_MASTER_TOOLS
+    expect(warns.every((r) => !r.message.includes("ANTHROPIC_API_KEY not set"))).toBe(true);
   });
 
   it("reports configured server as pass", async () => {

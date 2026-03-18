@@ -18,8 +18,6 @@ export const MCP_REGISTRY: McpServer[] = [
     args: ["-y", "task-master-ai"],
     env: {
       TASK_MASTER_TOOLS: "all",
-      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}",
-      PERPLEXITY_API_KEY: "${PERPLEXITY_API_KEY}",
     },
   },
   {

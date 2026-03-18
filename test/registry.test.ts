@@ -24,10 +24,9 @@ describe("MCP_REGISTRY", () => {
     expect(tm!.env!.TASK_MASTER_TOOLS).toBe("all");
   });
 
-  it("taskmaster entry has API key env placeholders", () => {
+  it("taskmaster entry has only TASK_MASTER_TOOLS env (no API key placeholders)", () => {
     const tm = MCP_REGISTRY.find((s) => s.name === "taskmaster");
-    expect(tm!.env!.ANTHROPIC_API_KEY).toBe("${ANTHROPIC_API_KEY}");
-    expect(tm!.env!.PERPLEXITY_API_KEY).toBe("${PERPLEXITY_API_KEY}");
+    expect(Object.keys(tm!.env!)).toEqual(["TASK_MASTER_TOOLS"]);
   });
 
   it("all entries have required set to false", () => {

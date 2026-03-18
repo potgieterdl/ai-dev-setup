@@ -47,14 +47,20 @@ describe("generateMcpJson", () => {
       expect(tm.args).toEqual(["-y", "task-master-ai"]);
     });
 
-    it("demo: taskmaster entry includes env vars as-is from registry", () => {
+    it("demo: taskmaster entry includes only TASK_MASTER_TOOLS env", () => {
       const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[0].content);
       const tm = parsed.mcpServers["taskmaster-ai"];
       expect(tm.env).toBeDefined();
       expect(tm.env.TASK_MASTER_TOOLS).toBe("all");
-      expect(tm.env.ANTHROPIC_API_KEY).toBe("${ANTHROPIC_API_KEY}");
-      expect(tm.env.PERPLEXITY_API_KEY).toBe("${PERPLEXITY_API_KEY}");
+      expect(Object.keys(tm.env)).toEqual(["TASK_MASTER_TOOLS"]);
+    });
+
+    it("demo: Claude Code format includes type stdio", () => {
+      const result = generateMcpJson(makeConfig({ selectedMcps: ["taskmaster"] }));
+      const parsed = JSON.parse(result[0].content);
+      const tm = parsed.mcpServers["taskmaster-ai"];
+      expect(tm.type).toBe("stdio");
     });
 
     it("demo: Claude Code format does NOT include cwd field", () => {
@@ -120,9 +126,8 @@ describe("generateMcpJson", () => {
       const parsed = JSON.parse(result[1].content);
       const tm = parsed.servers["taskmaster-ai"];
       expect(tm.env).toBeDefined();
-      expect(tm.env.ANTHROPIC_API_KEY).toBe("${env:ANTHROPIC_API_KEY}");
-      expect(tm.env.PERPLEXITY_API_KEY).toBe("${env:PERPLEXITY_API_KEY}");
       expect(tm.env.TASK_MASTER_TOOLS).toBe("${env:TASK_MASTER_TOOLS}");
+      expect(Object.keys(tm.env)).toEqual(["TASK_MASTER_TOOLS"]);
     });
 
     it("demo: VS Code format omits env block for servers with no env vars", () => {

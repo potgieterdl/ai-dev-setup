@@ -132,15 +132,16 @@ describe("ai-init integration", () => {
       expect(browser.args).toContain("@anthropic-ai/mcp-server-puppeteer");
     });
 
-    it("demo: taskmaster MCP includes env vars for API keys", async () => {
+    it("demo: taskmaster MCP includes TASK_MASTER_TOOLS and type stdio", async () => {
       await runCli([], tempDir, { SETUP_AI_MCPS: "taskmaster" });
 
       const content = await readFile(tempDir, ".mcp.json");
       const parsed = JSON.parse(content);
 
       const tm = parsed.mcpServers["taskmaster-ai"];
-      expect(tm.env).toHaveProperty("ANTHROPIC_API_KEY");
+      expect(tm.type).toBe("stdio");
       expect(tm.env).toHaveProperty("TASK_MASTER_TOOLS", "all");
+      expect(tm.env).not.toHaveProperty("ANTHROPIC_API_KEY");
     });
 
     it("demo: selecting all 5 MCP servers creates all entries", async () => {

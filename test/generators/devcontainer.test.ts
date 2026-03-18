@@ -100,12 +100,13 @@ describe("generateDevcontainer", () => {
       expect(parsed.remoteEnv.ANTHROPIC_API_KEY).toBe("${localEnv:ANTHROPIC_API_KEY}");
     });
 
-    it("demo: adds PERPLEXITY_API_KEY secret when taskmaster is selected", () => {
+    it("demo: taskmaster only adds ANTHROPIC_API_KEY (no extra API key secrets)", () => {
       const result = generateDevcontainer(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[0].content);
-      expect(parsed.secrets).toHaveProperty("PERPLEXITY_API_KEY");
-      expect(parsed.containerEnv).toHaveProperty("PERPLEXITY_API_KEY");
-      expect(parsed.remoteEnv).toHaveProperty("PERPLEXITY_API_KEY");
+      // taskmaster env only has TASK_MASTER_TOOLS (not a secret key), so
+      // only the always-present ANTHROPIC_API_KEY should appear
+      expect(Object.keys(parsed.secrets)).toEqual(["ANTHROPIC_API_KEY"]);
+      expect(parsed.containerEnv).not.toHaveProperty("PERPLEXITY_API_KEY");
     });
 
     it("demo: does NOT duplicate ANTHROPIC_API_KEY from taskmaster env", () => {
@@ -133,8 +134,9 @@ describe("generateDevcontainer", () => {
     it("demo: uses ${localEnv:VAR} syntax for env forwarding", () => {
       const result = generateDevcontainer(makeConfig({ selectedMcps: ["taskmaster"] }));
       const parsed = JSON.parse(result[0].content);
-      expect(parsed.containerEnv.PERPLEXITY_API_KEY).toBe("${localEnv:PERPLEXITY_API_KEY}");
-      expect(parsed.remoteEnv.PERPLEXITY_API_KEY).toBe("${localEnv:PERPLEXITY_API_KEY}");
+      // ANTHROPIC_API_KEY is always forwarded
+      expect(parsed.containerEnv.ANTHROPIC_API_KEY).toBe("${localEnv:ANTHROPIC_API_KEY}");
+      expect(parsed.remoteEnv.ANTHROPIC_API_KEY).toBe("${localEnv:ANTHROPIC_API_KEY}");
     });
   });
 

@@ -2,6 +2,7 @@ import type { ProjectConfig, FileDescriptor } from "../types.js";
 import { getSelectedServers } from "../registry.js";
 
 interface McpServerEntry {
+  type: "stdio";
   command: string;
   args: string[];
   env?: Record<string, string>;
@@ -28,6 +29,7 @@ function buildClaudeCodeMcpConfig(config: ProjectConfig): Record<string, McpServ
   for (const server of servers) {
     const defaultArgs = needsYFlag ? ["-y", server.npmPackage] : [server.npmPackage];
     const entry: McpServerEntry = {
+      type: "stdio",
       command: execCmd,
       args: server.args ?? defaultArgs,
     };
