@@ -111,25 +111,49 @@ async function callHaiku(detection: DetectionResult, projectRoot: string): Promi
  * Implements F20 Part C from the PRD.
  */
 export async function analyzeProject(projectRoot: string): Promise<ProjectAnalysis | null> {
+  // Step 1: Deterministic filesystem scan
   let detection: DetectionResult;
   try {
+    console.log("    → Step 1/3: Scanning filesystem...");
     detection = await detectProject(projectRoot);
-  } catch {
-    return null; // detectProject failed — fallback to defaults
+    console.log(
+      `    ✓ Found: ${detection.directories.length} dirs, ` +
+        `${detection.frameworks.length} frameworks, ` +
+        `${detection.configFiles.length} config files`
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.log(`    ✗ Filesystem scan failed: ${msg}`);
+    return null;
   }
 
+  // Step 2: Call Claude Haiku for AI analysis
   let raw: unknown;
   try {
+    console.log("    → Step 2/3: Calling Claude Haiku for analysis (timeout: 30s)...");
+    console.log("      Command: claude --model haiku -p <prompt> --output-format json");
     raw = await callHaiku(detection, projectRoot);
-  } catch {
-    return null; // Haiku call failed — fallback to defaults
+    console.log("    ✓ Received AI response.");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("SIGTERM") || msg.includes("timed out")) {
+      console.log("    ✗ Claude call timed out after 30s — is ANTHROPIC_API_KEY set?");
+    } else {
+      console.log(`    ✗ Claude call failed: ${msg}`);
+    }
+    return null;
   }
 
-  // First validation attempt
+  // Step 3: Validate response
+  console.log("    → Step 3/3: Validating response schema...");
   const result = AnalysisSchema.safeParse(raw);
-  if (result.success) return result.data;
+  if (result.success) {
+    console.log("    ✓ Validation passed.");
+    return result.data;
+  }
 
   // Retry once with validation errors as context
+  console.log("    ⚠ Validation failed, retrying with error feedback...");
   try {
     const retryPrompt = `Previous response failed validation with errors: ${JSON.stringify(result.error.issues)}
 Project structure: ${JSON.stringify(detection)}
@@ -156,10 +180,15 @@ Return valid JSON only.`;
     );
 
     const retryResult = AnalysisSchema.safeParse(JSON.parse(retryRaw));
-    if (retryResult.success) return retryResult.data;
-  } catch {
-    /* ignore retry errors */
+    if (retryResult.success) {
+      console.log("    ✓ Retry validation passed.");
+      return retryResult.data;
+    }
+    console.log("    ✗ Retry validation also failed.");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.log(`    ✗ Retry failed: ${msg}`);
   }
 
-  return null; // Both attempts failed — fallback to defaults
+  return null;
 }
