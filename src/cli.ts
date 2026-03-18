@@ -6,9 +6,10 @@ import { runWizard } from "./wizard.js";
 import { runUpdate } from "./update.js";
 import { runDoctor, printDoctorReport } from "./doctor.js";
 import { runAudit, checkClaudeCodeAvailable, installClaudeCode } from "./audit.js";
+import { analyzeProject } from "./analyze.js";
 import { defaultConfig } from "./defaults.js";
 import { isValidPmName } from "./pm.js";
-import { writeSavedConfig, initLogFile } from "./utils.js";
+import { writeSavedConfig, initLogFile, readSavedConfig } from "./utils.js";
 import {
   loadPreset,
   savePreset,
@@ -33,6 +34,8 @@ const cli = meow(
     update          Incrementally reconfigure after initial setup
     doctor          Validate the AI dev environment setup
     presets         List, export, or import preset configurations
+    scan            AI-powered project scan (run standalone after setup)
+    audit           AI-powered audit of generated files (run standalone after setup)
 
   Options
     --non-interactive     Skip prompts, use environment variables
@@ -205,6 +208,88 @@ async function main(): Promise<void> {
         console.log("");
       }
       process.exit(0);
+      break;
+    }
+
+    case "scan": {
+      // Standalone AI project scan — uses Claude Haiku to analyze the codebase
+      console.log("[ai-init] Running AI project scan...\n");
+      if (!(await checkClaudeCodeAvailable())) {
+        console.error("[ai-init] Claude Code is not installed. Install it first or set ANTHROPIC_API_KEY.");
+        process.exit(1);
+      }
+      const scanResult = await analyzeProject(projectRoot);
+      if (!scanResult) {
+        console.log("\n[ai-init] Scan returned no results. Check ai-init.log for details.");
+        process.exit(1);
+      }
+      console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("  AI Project Scan Results");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+      console.log(`  Architecture:  ${scanResult.detectedArchitecture}`);
+      console.log(`  API paths:     ${scanResult.apiPaths.join(", ") || "none"}`);
+      console.log(`  DB paths:      ${scanResult.dbPaths.join(", ") || "none"}`);
+      console.log(`  Test paths:    ${scanResult.testPaths.join(", ") || "none"}`);
+      console.log(`  Rules:         ${scanResult.recommendedRules.join(", ")}`);
+      console.log(`  Hook steps:    ${scanResult.hookSteps.join(", ")}`);
+      console.log(`  Guidance:      "${scanResult.architectureGuidance}"`);
+      console.log("");
+      break;
+    }
+
+    case "audit": {
+      // Standalone AI audit — reviews generated files using Claude
+      console.log("[ai-init] Running AI audit of generated files...\n");
+      if (!(await checkClaudeCodeAvailable())) {
+        console.error("[ai-init] Claude Code is not installed. Install it first or set ANTHROPIC_API_KEY.");
+        process.exit(1);
+      }
+      // Discover generated files: read saved config, then glob for known paths
+      const auditConfig = defaultConfig(projectRoot);
+      const saved = await readSavedConfig(projectRoot);
+      if (saved) {
+        auditConfig.selectedMcps = saved.selectedMcps ?? auditConfig.selectedMcps;
+      }
+      // Collect files that exist in the project
+      const fs = await import("node:fs/promises");
+      const path = await import("node:path");
+      const candidates = [
+        "CLAUDE.md",
+        "CLAUDE_MCP.md",
+        ".mcp.json",
+        ".vscode/mcp.json",
+        ".devcontainer/devcontainer.json",
+      ];
+      // Scan for docs/, rules/, skills/, hooks/, commands/
+      for (const dir of [
+        "docs",
+        ".claude/rules",
+        ".claude/skills",
+        ".claude/hooks",
+        ".claude/commands",
+      ]) {
+        try {
+          const entries = await fs.readdir(path.join(projectRoot, dir));
+          for (const e of entries) candidates.push(`${dir}/${e}`);
+        } catch {
+          /* dir doesn't exist */
+        }
+      }
+      const auditFiles: string[] = [];
+      for (const f of candidates) {
+        try {
+          await fs.access(path.join(projectRoot, f));
+          auditFiles.push(f);
+        } catch {
+          /* skip missing */
+        }
+      }
+      if (auditFiles.length === 0) {
+        console.error("[ai-init] No generated files found. Run 'ai-init' first.");
+        process.exit(1);
+      }
+      console.log(`[ai-init] Auditing ${auditFiles.length} files...`);
+      await runAudit(auditConfig, auditFiles);
       break;
     }
 
