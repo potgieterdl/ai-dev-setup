@@ -132,7 +132,7 @@ describe("generateHooks", () => {
       expect(parsed.hooks.PreToolUse).toHaveLength(1);
     });
 
-    it("demo: hook matcher targets git commit with correct path", async () => {
+    it("demo: hook matcher targets git commit with command type", async () => {
       const result = await generateHooks(makeConfig());
       const settings = result.find((f) => f.path === ".claude/settings.json");
       expect(settings).toBeDefined();
@@ -140,7 +140,9 @@ describe("generateHooks", () => {
       const parsed = JSON.parse(settings!.content);
       const hook = parsed.hooks.PreToolUse[0];
       expect(hook.matcher).toBe("Bash(git commit)");
-      expect(hook.hook).toBe(".claude/hooks/pre-commit.sh");
+      expect(hook.hooks).toHaveLength(1);
+      expect(hook.hooks[0].type).toBe("command");
+      expect(hook.hooks[0].command).toBe("bash .claude/hooks/pre-commit.sh");
     });
 
     it("smoke: settings.json is valid JSON", async () => {

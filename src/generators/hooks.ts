@@ -169,7 +169,12 @@ async function buildSettingsJson(projectRoot: string): Promise<string> {
 
   const hookEntry = {
     matcher: "Bash(git commit)",
-    hook: ".claude/hooks/pre-commit.sh",
+    hooks: [
+      {
+        type: "command",
+        command: "bash .claude/hooks/pre-commit.sh",
+      },
+    ],
   };
 
   // Merge hooks into existing settings — validate structure defensively
@@ -180,13 +185,12 @@ async function buildSettingsJson(projectRoot: string): Promise<string> {
       : {};
   const rawPreToolUse = Array.isArray(hooks.PreToolUse) ? hooks.PreToolUse : [];
   const preToolUse = rawPreToolUse.filter(
-    (h): h is { matcher: string; hook: string } =>
-      typeof h === "object" && h !== null && "matcher" in h && "hook" in h
+    (h): h is Record<string, unknown> => typeof h === "object" && h !== null && "matcher" in h
   );
 
   // Avoid duplicating the hook if it already exists
   const alreadyExists = preToolUse.some(
-    (h) => h.matcher === hookEntry.matcher && h.hook === hookEntry.hook
+    (h) => h.matcher === hookEntry.matcher
   );
 
   if (!alreadyExists) {
